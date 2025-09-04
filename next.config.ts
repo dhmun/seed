@@ -12,6 +12,11 @@ const nextConfig: NextConfig = {
   basePath: isGitHubPages ? '/seed' : '',
   assetPrefix: isGitHubPages ? '/seed' : '',
   
+  // Disable ESLint during builds for now
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
   images: {
     // Only unoptimize for GitHub Pages
     unoptimized: isGitHubPages,

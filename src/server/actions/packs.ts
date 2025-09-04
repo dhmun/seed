@@ -153,7 +153,7 @@ export async function getPackBySlug(slug: string): Promise<PackWithContents | nu
       return { ...pack, contents: [] };
     }
 
-    const contents = packItems?.map(item => (item as any).contents).filter(Boolean) || [];
+    const contents = packItems?.map((item: any) => item.contents).filter(Boolean) || [];
 
     return { ...pack, contents };
   } catch (error) {

@@ -180,7 +180,7 @@ export async function getContentStats() {
     }
 
     const total = data.length;
-    const byKind = data.reduce((acc: Record<string, number>, content) => {
+    const byKind = data.reduce((acc: Record<string, number>, content: { kind: string }) => {
       acc[content.kind] = (acc[content.kind] || 0) + 1;
       return acc;
     }, {});
