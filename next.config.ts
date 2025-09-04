@@ -1,12 +1,20 @@
 import type { NextConfig } from "next";
 
+const isGitHubPages = process.env.GITHUB_PAGES === 'true';
+const isProd = process.env.NODE_ENV === 'production';
+
 const nextConfig: NextConfig = {
-  output: 'export',
+  // Only export for GitHub Pages
+  ...(isGitHubPages && { output: 'export' }),
   trailingSlash: true,
-  basePath: process.env.NODE_ENV === 'production' ? '/seed' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/seed' : '',
+  
+  // Different base paths for different deployments
+  basePath: isGitHubPages ? '/seed' : '',
+  assetPrefix: isGitHubPages ? '/seed' : '',
+  
   images: {
-    unoptimized: true,
+    // Only unoptimize for GitHub Pages
+    unoptimized: isGitHubPages,
     remotePatterns: [
       {
         protocol: 'https',

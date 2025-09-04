@@ -58,14 +58,36 @@
         <h1>🌱 희망의 씨앗 캠페인</h1>
         <p>한국의 아름다운 콘텐츠로 희망을 전하는<br>미디어팩 제작 플랫폼</p>
         
-        <a href="https://seed-of-hope-campaign.vercel.app" class="btn" target="_blank">
+        <a href="https://hope-seed-campaign.vercel.app" class="btn" target="_blank">
             🎬 미디어팩 만들러 가기
         </a>
         
+        <a href="#" class="btn" style="background: #333; margin-left: 1rem;" onclick="showLocalInfo(); return false;">
+            💻 로컬 실행 방법
+        </a>
+        
         <div class="note">
-            <p>💡 이 프로젝트는 Next.js로 구축되었으며,<br>
-            실제 서비스는 Vercel에서 호스팅됩니다.</p>
+            <p>💡 이 프로젝트는 Next.js로 구축되었습니다.<br>
+            로컬에서 <code>npm run dev</code>로 실행하세요.</p>
+            
+            <div id="localInfo" style="display: none; margin-top: 1rem; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 10px; text-align: left;">
+                <h3>🚀 로컬 실행 방법:</h3>
+                <code style="display: block; background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 5px; margin: 0.5rem 0;">
+                git clone https://github.com/dhmun/seed.git<br>
+                cd seed<br>
+                npm install<br>
+                npm run dev
+                </code>
+                <p>그 후 <a href="http://localhost:3000" style="color: #ffd700;">http://localhost:3000</a>에서 확인하세요!</p>
+            </div>
         </div>
+        
+        <script>
+            function showLocalInfo() {
+                const info = document.getElementById('localInfo');
+                info.style.display = info.style.display === 'none' ? 'block' : 'none';
+            }
+        </script>
     </div>
 </body>
 </html>
