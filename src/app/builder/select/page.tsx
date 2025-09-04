@@ -1,0 +1,377 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { 
+  ArrowLeft, 
+  ArrowRight, 
+  Check, 
+  AlertTriangle,
+  HardDrive,
+  Filter,
+  Search
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { listContents } from '@/server/actions/contents';
+import { 
+  formatFileSize, 
+  calculateTotalSize, 
+  getCapacityInMB,
+  getContentKindLabel,
+  type ContentKind 
+} from '@/lib/validations';
+import type { Content } from '@/lib/supabase';
+
+const contentKinds: { value: ContentKind; label: string; icon: string }[] = [
+  { value: 'movie', label: '영화', icon: '🎬' },
+  { value: 'drama', label: '드라마', icon: '📺' },
+  { value: 'show', label: '예능', icon: '🎪' },
+  { value: 'kpop', label: 'K-POP', icon: '🎵' },
+  { value: 'doc', label: '다큐', icon: '📚' },
+];
+
+export default function ContentSelect() {
+  const [contents, setContents] = useState<Content[]>([]);
+  const [filteredContents, setFilteredContents] = useState<Content[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState<ContentKind | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [targetCapacity, setTargetCapacity] = useState<'16' | '32'>('16');
+  const [loading, setLoading] = useState(true);
+
+  // 콘텐츠 로드
+  useEffect(() => {
+    async function loadContents() {
+      try {
+        const data = await listContents();
+        setContents(data);
+        setFilteredContents(data);
+      } catch (error) {
+        toast.error('콘텐츠를 불러오는데 실패했습니다.');
+        console.error('Error loading contents:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadContents();
+  }, []);
+
+  // 필터링
+  useEffect(() => {
+    let filtered = contents;
+
+    // 카테고리 필터
+    if (selectedFilter !== 'all') {
+      filtered = filtered.filter(content => content.kind === selectedFilter);
+    }
+
+    // 검색 필터
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(content => 
+        content.title.toLowerCase().includes(query) ||
+        content.summary.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredContents(filtered);
+  }, [contents, selectedFilter, searchQuery]);
+
+  // 선택된 콘텐츠들
+  const selectedContents = contents.filter(content => selectedIds.includes(content.id));
+  const totalSizeMB = calculateTotalSize(selectedContents);
+  const capacityMB = getCapacityInMB(targetCapacity);
+  const usagePercentage = (totalSizeMB / capacityMB) * 100;
+  const isOverCapacity = usagePercentage > 100;
+  const isMinimumMet = selectedIds.length >= 3;
+
+  // 콘텐츠 선택/해제
+  const toggleContent = (contentId: string) => {
+    setSelectedIds(prev => {
+      const newSelected = prev.includes(contentId)
+        ? prev.filter(id => id !== contentId)
+        : [...prev, contentId];
+
+      // 선택 시 용량 체크
+      if (!prev.includes(contentId)) {
+        const content = contents.find(c => c.id === contentId);
+        if (content) {
+          const testTotal = calculateTotalSize([...selectedContents, content]);
+          const testPercentage = (testTotal / capacityMB) * 100;
+          
+          if (testPercentage > 100) {
+            toast.error(`용량을 초과했습니다. ${targetCapacity}GB 이하로 선택해주세요.`);
+            return prev;
+          }
+        }
+      }
+
+      return newSelected;
+    });
+  };
+
+  const handleNext = () => {
+    if (!isMinimumMet) {
+      toast.error('최소 3개의 콘텐츠를 선택해주세요.');
+      return;
+    }
+
+    if (isOverCapacity) {
+      toast.error('선택한 콘텐츠가 용량을 초과했습니다.');
+      return;
+    }
+
+    // 선택된 콘텐츠 정보를 저장하고 다음 단계로
+    localStorage.setItem('selectedContentIds', JSON.stringify(selectedIds));
+    window.location.href = '/builder/customize';
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">콘텐츠를 불러오는 중...</p>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen py-8 px-4">
+      <div className="container max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <Link href="/builder" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+            ← 이전으로
+          </Link>
+          
+          <div className="mt-4 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary-blue/10 text-primary-blue border border-primary-blue/20 mb-4">
+              <Filter className="w-4 h-4" />
+              <span className="text-sm font-medium">2단계 / 4단계</span>
+            </div>
+            
+            <h1 className="text-3xl md:text-4xl font-heading font-bold mb-2">
+              콘텐츠 선택하기
+            </h1>
+            <p className="text-muted-foreground">
+              마음에 드는 콘텐츠를 선택해주세요. 최소 3개 이상 선택해야 합니다.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* 좌측: 필터 및 용량 체크 */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-8 space-y-6">
+              {/* 용량 체크 */}
+              <Card className="p-6">
+                <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
+                  <HardDrive className="w-5 h-5" />
+                  용량 체크
+                </h3>
+
+                {/* 용량 선택 */}
+                <div className="mb-4">
+                  <div className="flex gap-2">
+                    <Button
+                      variant={targetCapacity === '16' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTargetCapacity('16')}
+                      className="flex-1"
+                    >
+                      16GB
+                    </Button>
+                    <Button
+                      variant={targetCapacity === '32' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setTargetCapacity('32')}
+                      className="flex-1"
+                    >
+                      32GB
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 용량 게이지 */}
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span>사용량</span>
+                    <span className={isOverCapacity ? 'text-destructive font-bold' : ''}>
+                      {formatFileSize(totalSizeMB)} / {targetCapacity}GB
+                    </span>
+                  </div>
+                  <Progress 
+                    value={Math.min(usagePercentage, 100)} 
+                    className={`h-3 ${isOverCapacity ? '[&>div]:bg-destructive' : ''}`}
+                  />
+                  {isOverCapacity && (
+                    <div className="flex items-center gap-1 text-destructive text-xs mt-2">
+                      <AlertTriangle className="w-3 h-3" />
+                      용량 초과! 일부 콘텐츠를 제거해주세요.
+                    </div>
+                  )}
+                </div>
+
+                {/* 선택 상태 */}
+                <div className="text-sm text-muted-foreground">
+                  <div>선택됨: <strong>{selectedIds.length}</strong>개</div>
+                  <div className={!isMinimumMet ? 'text-orange-600 font-medium' : ''}>
+                    최소 선택: <strong>3</strong>개
+                  </div>
+                </div>
+              </Card>
+
+              {/* 카테고리 필터 */}
+              <Card className="p-6">
+                <h3 className="font-heading font-bold text-lg mb-4">카테고리</h3>
+                <div className="space-y-2">
+                  <Button
+                    variant={selectedFilter === 'all' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setSelectedFilter('all')}
+                    className="w-full justify-start"
+                  >
+                    전체
+                  </Button>
+                  {contentKinds.map((kind) => (
+                    <Button
+                      key={kind.value}
+                      variant={selectedFilter === kind.value ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setSelectedFilter(kind.value)}
+                      className="w-full justify-start"
+                    >
+                      <span className="mr-2">{kind.icon}</span>
+                      {kind.label}
+                    </Button>
+                  ))}
+                </div>
+              </Card>
+
+              {/* 검색 */}
+              <Card className="p-6">
+                <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
+                  <Search className="w-5 h-5" />
+                  검색
+                </h3>
+                <input
+                  type="text"
+                  placeholder="제목으로 검색..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+              </Card>
+            </div>
+          </div>
+
+          {/* 우측: 콘텐츠 그리드 */}
+          <div className="lg:col-span-3">
+            {filteredContents.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">조건에 맞는 콘텐츠가 없습니다.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredContents.map((content) => {
+                  const isSelected = selectedIds.includes(content.id);
+                  return (
+                    <Card
+                      key={content.id}
+                      className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                        isSelected 
+                          ? 'ring-2 ring-primary-blue bg-primary-blue/5 border-primary-blue' 
+                          : 'hover:shadow-md'
+                      }`}
+                      onClick={() => toggleContent(content.id)}
+                    >
+                      {/* 썸네일 */}
+                      <div className="relative mb-3">
+                        <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                          <Image
+                            src={content.thumbnail_url}
+                            alt={content.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          />
+                        </div>
+                        {isSelected && (
+                          <div className="absolute top-2 right-2 w-6 h-6 bg-primary-blue rounded-full flex items-center justify-center">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 콘텐츠 정보 */}
+                      <div>
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-bold text-sm line-clamp-2">{content.title}</h3>
+                          <Badge variant="outline" className="text-xs ml-2 shrink-0">
+                            {getContentKindLabel(content.kind)}
+                          </Badge>
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                          {content.summary}
+                        </p>
+                        
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground">
+                            {formatFileSize(content.size_mb)}
+                          </span>
+                          <Button 
+                            size="sm" 
+                            variant={isSelected ? "default" : "outline"}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleContent(content.id);
+                            }}
+                          >
+                            {isSelected ? '선택됨' : '선택'}
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 하단 고정 버튼 */}
+            <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t p-4 lg:static lg:bg-transparent lg:border-t-0 lg:p-0 lg:mt-8">
+              <div className="container max-w-7xl mx-auto">
+                <div className="flex justify-between items-center">
+                  <Link href="/builder">
+                    <Button variant="outline" size="lg">
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      이전
+                    </Button>
+                  </Link>
+                  
+                  <Button
+                    size="lg"
+                    onClick={handleNext}
+                    disabled={!isMinimumMet || isOverCapacity}
+                    className="bg-primary-blue hover:bg-primary-blue/90"
+                  >
+                    다음
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
