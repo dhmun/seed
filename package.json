@@ -9,7 +9,10 @@
     "export": "next build && next export",
     "start": "next start",
     "lint": "eslint",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "deploy:vercel": "node deploy-scripts/deploy-vercel.js",
+    "deploy:netlify": "node deploy-scripts/deploy-netlify.js",
+    "deploy:all": "npm run deploy:vercel && npm run deploy:netlify"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

@@ -105,17 +105,29 @@ src/
 - **본문**: Inter + Noto Sans KR
 - **헤드라인**: Gowun Dodum
 
-## 🚀 배포
+## 🚀 원클릭 배포
 
-### Vercel 배포
+### Vercel (추천)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/dhmun/seed)
 
-1. **프로젝트 배포**
-   ```bash
-   npx vercel --prod
-   ```
+### Netlify
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/dhmun/seed)
 
-2. **환경 변수 설정**
-   - Vercel 대시보드에서 Environment Variables 설정
+### Railway
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/qzK4Pp?referralCode=bmV3)
+
+### 수동 배포
+
+#### Vercel CLI
+```bash
+npx vercel --prod
+```
+
+#### Netlify CLI  
+```bash
+npm run build
+npx netlify deploy --prod --dir=out
+```
 
 ## 🧪 개발 및 테스트
 
