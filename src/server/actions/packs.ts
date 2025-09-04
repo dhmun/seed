@@ -63,7 +63,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
       return { slug: shareSlug, serial };
     }
 
-    // 트랜잭션 시작
+    // 트랜잭션 시작 - 미디어팩 시리얼 번호 증가
     const { data: serialData, error: serialError } = await supabaseAdmin
       .rpc('increment_counter', { counter_key: 'pack_serial' });
 

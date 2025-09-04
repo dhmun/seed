@@ -20,8 +20,7 @@ export const createPackSchema = z.object({
   name: z
     .string()
     .min(1, '미디어팩 이름은 필수입니다')
-    .max(20, '미디어팩 이름은 20자 이하여야 합니다')
-    .regex(/^[a-zA-Z0-9가-힣\s!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]*$/, '허용되지 않는 문자가 포함되어 있습니다'),
+    .max(20, '미디어팩 이름은 20자 이하여야 합니다'),
   
   message: z
     .string()

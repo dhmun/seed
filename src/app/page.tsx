@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Users, Gift, Sparkles } from "lucide-react";
+import RealTimeStats from "@/components/real-time-stats";
 
 export default function Home() {
   return (
@@ -44,21 +45,8 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            <Card className="p-4 bg-card/50 border-0 backdrop-blur-sm">
-              <div className="text-2xl font-bold text-primary-blue">12,847</div>
-              <div className="text-sm text-muted-foreground">참여자</div>
-            </Card>
-            <Card className="p-4 bg-card/50 border-0 backdrop-blur-sm">
-              <div className="text-2xl font-bold text-mint">3,421</div>
-              <div className="text-sm text-muted-foreground">공유 횟수</div>
-            </Card>
-            <Card className="p-4 bg-card/50 border-0 backdrop-blur-sm">
-              <div className="text-2xl font-bold text-coral">5,678</div>
-              <div className="text-sm text-muted-foreground">콘텐츠 선택</div>
-            </Card>
-          </div>
+          {/* Real-time Stats */}
+          <RealTimeStats />
         </div>
       </section>
 

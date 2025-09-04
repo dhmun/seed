@@ -19,8 +19,8 @@ import {
   Camera
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { createPack } from '@/server/actions/packs';
 import { getContentsByIds } from '@/server/actions/contents';
+import { trackShare, trackPackCreation } from '@/lib/analytics';
 import type { Content } from '@/lib/supabase';
 
 interface PackResult {
@@ -37,67 +37,72 @@ export default function ResultPage() {
   const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
-    async function generatePack() {
+    async function loadPackResult() {
       try {
-        // 저장된 데이터 로드
-        const packDataStr = localStorage.getItem('packData');
-        if (!packDataStr) {
+        // 저장된 결과 로드
+        const packResultStr = localStorage.getItem('packResult');
+        if (!packResultStr) {
           toast.error('미디어팩 데이터가 없습니다.');
           window.location.href = '/builder';
           return;
         }
 
-        const packData = JSON.parse(packDataStr);
+        const packResult = JSON.parse(packResultStr);
         
-        // 미디어팩 생성
-        const { slug, serial } = await createPack({
-          name: packData.name,
-          message: packData.message,
-          selectedContentIds: packData.selectedContentIds
-        });
-
         // 선택된 콘텐츠 정보 가져오기
-        const contents = await getContentsByIds(packData.selectedContentIds);
+        const contents = await getContentsByIds(packResult.selectedContentIds);
 
-        setResult({
-          slug,
-          serial,
-          name: packData.name,
-          message: packData.message,
+        const fullPackResult = {
+          slug: packResult.slug,
+          serial: packResult.serial,
+          name: packResult.name,
+          message: packResult.message,
           contents
-        });
+        };
+        
+        setResult(fullPackResult);
 
         // 로컬 스토리지 정리
-        localStorage.removeItem('selectedContentIds');
-        localStorage.removeItem('packData');
+        localStorage.removeItem('packResult');
+
+        // 미디어팩 생성 추적 (analytics only)
+        await trackPackCreation(packResult.slug, packResult.serial);
 
         toast.success('미디어팩이 성공적으로 생성되었습니다! 🎉');
       } catch (error) {
-        console.error('Error creating pack:', error);
-        toast.error('미디어팩 생성에 실패했습니다. 다시 시도해주세요.');
+        console.error('Error loading pack result:', error);
+        toast.error('미디어팩 정보를 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
       }
     }
 
-    generatePack();
+    loadPackResult();
   }, []);
 
   const shareUrl = result ? `${window.location.origin}/pack/${result.slug}` : '';
 
   const handleCopyLink = async () => {
-    if (!shareUrl) return;
+    if (!shareUrl || !result) return;
     
     try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast.success('링크가 복사되었습니다!');
+      const copySuccess = await safeCopyToClipboard(shareUrl);
+      if (copySuccess) {
+        await trackShare('copy_link', result.slug);
+        toast.success('링크가 복사되었습니다!');
+      } else {
+        toast.error('링크 복사에 실패했습니다.');
+      }
     } catch (error) {
       toast.error('링크 복사에 실패했습니다.');
     }
   };
 
-  const handleKakaoShare = () => {
+  const handleKakaoShare = async () => {
     if (!result || !shareUrl) return;
+
+    // 카카오 공유 추적
+    await trackShare('kakao', result.slug);
 
     // 카카오 SDK 로드 체크 (실제 구현 시 필요)
     if (typeof window !== 'undefined' && (window as any).Kakao) {
@@ -127,8 +132,11 @@ export default function ResultPage() {
     }
   };
 
-  const handleSocialShare = (platform: 'facebook' | 'twitter') => {
+  const handleSocialShare = async (platform: 'facebook' | 'twitter') => {
     if (!result || !shareUrl) return;
+
+    // 소셜 공유 추적
+    await trackShare(platform, result.slug);
 
     const text = `${result.name} - ${result.message}`;
     let url = '';
@@ -145,8 +153,39 @@ export default function ResultPage() {
     window.open(url, '_blank', 'width=600,height=400');
   };
 
+  // 안전한 클립보드 복사 헬퍼 함수
+  const safeCopyToClipboard = async (text: string): Promise<boolean> => {
+    try {
+      // Modern clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+      
+      // Fallback for older browsers or non-HTTPS
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-999999px';
+      textArea.style.top = '-999999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      
+      const result = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return result;
+    } catch (error) {
+      console.warn('Clipboard copy failed:', error);
+      return false;
+    }
+  };
+
   const handleInstagramShare = async () => {
     if (!result || !shareUrl) return;
+
+    // 인스타그램 공유 추적
+    await trackShare('instagram', result.slug);
 
     const text = `${result.name}\n${result.message}\n\n🎬 ${result.serial}번째 희망의 씨앗이 탄생했습니다!\n\n${shareUrl}`;
     const ogImageUrl = `${window.location.origin}/api/og?slug=${result.slug}`;
@@ -172,11 +211,9 @@ export default function ResultPage() {
       
       if (isIOS || isAndroid) {
         // 텍스트를 클립보드에 복사
-        try {
-          await navigator.clipboard.writeText(text);
+        const copySuccess = await safeCopyToClipboard(text);
+        if (copySuccess) {
           toast.success('공유 텍스트가 복사되었습니다!');
-        } catch (clipboardError) {
-          console.log('Clipboard copy failed');
         }
 
         // 인스타그램 앱 URL scheme으로 열기
@@ -200,8 +237,12 @@ export default function ResultPage() {
       }
 
       // 3. 데스크톱 또는 기타 환경: 링크 복사 + 가이드
-      await navigator.clipboard.writeText(text);
-      toast.success('공유 텍스트가 복사되었습니다! 인스타그램에서 붙여넣으세요.');
+      const copySuccess = await safeCopyToClipboard(text);
+      if (copySuccess) {
+        toast.success('공유 텍스트가 복사되었습니다! 인스타그램에서 붙여넣으세요.');
+      } else {
+        toast.error('클립보드 복사에 실패했습니다. 텍스트를 수동으로 복사해주세요.');
+      }
       
     } catch (error) {
       console.error('Instagram share failed:', error);

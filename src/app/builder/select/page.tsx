@@ -127,9 +127,10 @@ export default function ContentSelect() {
       return;
     }
 
-    // 선택된 콘텐츠 정보를 저장하고 다음 단계로
-    localStorage.setItem('selectedContentIds', JSON.stringify(selectedIds));
-    window.location.href = '/builder/customize';
+    // 선택된 콘텐츠 ID를 URL 쿼리로 전달
+    const idsParam = selectedIds.join(',');
+    const capacityParam = targetCapacity;
+    window.location.href = `/builder/customize?ids=${idsParam}&capacity=${capacityParam}`;
   };
 
   if (loading) {

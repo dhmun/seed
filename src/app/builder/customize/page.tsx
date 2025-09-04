@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getContentsByIds } from '@/server/actions/contents';
+import { createPack } from '@/server/actions/packs';
 import { createPackSchema } from '@/lib/validations';
 import type { Content } from '@/lib/supabase';
 
@@ -31,16 +32,35 @@ export default function Customize() {
   useEffect(() => {
     async function loadSelectedContents() {
       try {
-        const savedIds = localStorage.getItem('selectedContentIds');
-        if (!savedIds) {
-          toast.error('선택된 콘텐츠가 없습니다. 다시 선택해주세요.');
-          window.location.href = '/builder/select';
-          return;
+        // URL 쿼리에서 선택된 콘텐츠 ID 읽기
+        const urlParams = new URLSearchParams(window.location.search);
+        const idsParam = urlParams.get('ids');
+        const capacityParam = urlParams.get('capacity');
+        
+        if (!idsParam) {
+          // URL에 데이터가 없으면 localStorage에서 fallback으로 시도
+          const savedIds = localStorage.getItem('selectedContentIds');
+          if (!savedIds) {
+            toast.error('선택된 콘텐츠가 없습니다. 다시 선택해주세요.');
+            window.location.href = '/builder/select';
+            return;
+          }
+          
+          const contentIds = JSON.parse(savedIds);
+          const contents = await getContentsByIds(contentIds);
+          setSelectedContents(contents);
+        } else {
+          // URL 쿼리에서 콘텐츠 ID 파싱
+          const contentIds = idsParam.split(',').filter(id => id.trim());
+          const contents = await getContentsByIds(contentIds);
+          setSelectedContents(contents);
+          
+          // localStorage에도 저장 (fallback용)
+          localStorage.setItem('selectedContentIds', JSON.stringify(contentIds));
+          if (capacityParam) {
+            localStorage.setItem('targetCapacity', capacityParam);
+          }
         }
-
-        const contentIds = JSON.parse(savedIds);
-        const contents = await getContentsByIds(contentIds);
-        setSelectedContents(contents);
       } catch (error) {
         toast.error('선택된 콘텐츠를 불러오는데 실패했습니다.');
         console.error('Error loading selected contents:', error);
@@ -57,37 +77,78 @@ export default function Customize() {
   const messageError = message.length > 50 ? '50자 이하로 입력해주세요.' : '';
   const isValid = packName.length > 0 && message.length > 0 && !packNameError && !messageError;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!isValid) {
       toast.error('모든 필드를 올바르게 입력해주세요.');
       return;
     }
 
-    // 검증
-    const savedIds = localStorage.getItem('selectedContentIds');
-    if (!savedIds) {
-      toast.error('선택된 콘텐츠 정보가 없습니다.');
-      return;
+    // 선택된 콘텐츠 ID 구하기 (URL 우선, localStorage fallback)
+    let selectedContentIds: string[] = [];
+    
+    // URL 쿼리에서 먼저 시도
+    const urlParams = new URLSearchParams(window.location.search);
+    const idsParam = urlParams.get('ids');
+    
+    if (idsParam) {
+      selectedContentIds = idsParam.split(',').filter(id => id.trim());
+    } else {
+      // fallback: localStorage에서 가져오기
+      const savedIds = localStorage.getItem('selectedContentIds');
+      if (!savedIds) {
+        toast.error('선택된 콘텐츠 정보가 없습니다.');
+        return;
+      }
+      selectedContentIds = JSON.parse(savedIds);
     }
 
-    const selectedContentIds = JSON.parse(savedIds);
-
     try {
+      console.log('Debug - Validation input:', {
+        name: packName,
+        nameLength: packName.length,
+        nameChars: packName.split('').map(c => `${c}(${c.charCodeAt(0)})`),
+        message: message,
+        selectedContentIds: selectedContentIds
+      });
+      
       createPackSchema.parse({
         name: packName,
         message: message,
         selectedContentIds: selectedContentIds
       });
 
-      // 데이터 저장하고 다음 단계로
-      const packData = {
-        name: packName,
-        message: message,
-        selectedContentIds: selectedContentIds
-      };
+      // 미디어팩 생성
+      setSubmitting(true);
+      
+      try {
+        const { slug, serial } = await createPack({
+          name: packName,
+          message: message,
+          selectedContentIds: selectedContentIds
+        });
 
-      localStorage.setItem('packData', JSON.stringify(packData));
-      window.location.href = '/builder/result';
+        // 생성된 미디어팩 정보를 결과 페이지로 전달
+        const packResult = {
+          slug,
+          serial,
+          name: packName,
+          message: message,
+          selectedContentIds: selectedContentIds
+        };
+
+        localStorage.setItem('packResult', JSON.stringify(packResult));
+        // 기존 localStorage 정리
+        localStorage.removeItem('selectedContentIds');
+        localStorage.removeItem('packData');
+        
+        window.location.href = '/builder/result';
+        
+      } catch (error) {
+        console.error('Pack creation error:', error);
+        toast.error('미디어팩 생성에 실패했습니다. 다시 시도해주세요.');
+      } finally {
+        setSubmitting(false);
+      }
     } catch (error) {
       toast.error('입력 정보가 올바르지 않습니다.');
       console.error('Validation error:', error);
