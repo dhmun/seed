@@ -14,6 +14,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "sync:tmdb": "node scripts/sync-tmdb.js",
+    "sync:spotify": "npx tsx scripts/sync-popular-playlists.ts",
     "deploy:vercel": "node deploy-scripts/deploy-vercel.js",
     "deploy:netlify": "node deploy-scripts/deploy-netlify.js",
     "deploy:all": "npm run deploy:vercel && npm run deploy:netlify"
@@ -55,6 +56,7 @@
     "jest-environment-jsdom": "^30.1.2",
     "node-fetch": "^2.7.0",
     "tailwindcss": "^4",
+    "tsx": "^4.20.5",
     "tw-animate-css": "^1.3.8",
     "typescript": "^5"
   },

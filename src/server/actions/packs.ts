@@ -12,6 +12,7 @@ export interface CreatePackData {
   name: string;
   message: string;
   selectedContentIds: string[];
+  selectedSpotifyTrackIds?: string[];
 }
 
 export interface PackWithContents extends Pack {
@@ -29,7 +30,8 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
       throw new Error('메시지는 1-50자 사이여야 합니다.');
     }
 
-    if (!data.selectedContentIds || data.selectedContentIds.length < 3) {
+    const totalContentCount = (data.selectedContentIds?.length || 0) + (data.selectedSpotifyTrackIds?.length || 0);
+    if (totalContentCount < 3) {
       throw new Error('최소 3개의 콘텐츠를 선택해야 합니다.');
     }
 

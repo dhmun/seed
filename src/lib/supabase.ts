@@ -18,15 +18,21 @@ if (hasValidSupabaseConfig) {
   supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 } else {
   // Mock clients for development
-  supabase = {
-    from: () => ({
-      select: () => ({ error: new Error('Mock mode - Supabase not connected') })
-    })
-  };
-  supabaseAdmin = {
-    from: () => ({
+  const mockTable = {
+    select: () => ({ error: new Error('Mock mode - Supabase not connected') }),
+    insert: () => ({ error: new Error('Mock mode - Supabase not connected') }),
+    update: () => ({ error: new Error('Mock mode - Supabase not connected') }),
+    upsert: () => ({ 
       select: () => ({ error: new Error('Mock mode - Supabase not connected') })
     }),
+    delete: () => ({ error: new Error('Mock mode - Supabase not connected') })
+  };
+  
+  supabase = {
+    from: () => mockTable
+  };
+  supabaseAdmin = {
+    from: () => mockTable,
     rpc: () => ({ error: new Error('Mock mode - Supabase not connected') })
   };
 }

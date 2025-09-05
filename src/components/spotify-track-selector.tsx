@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,11 +17,17 @@ type SpotifyTrackRow = Database['public']['Tables']['spotify_tracks']['Row'];
 interface SpotifyTrackSelectorProps {
   onSelectTracks: (selectedIds: string[]) => void;
   initialSelectedIds: string[];
+  currentContentsSizeMB?: number;
+  capacityMB?: number;
+  targetCapacity?: string;
 }
 
 export default function SpotifyTrackSelector({
   onSelectTracks,
   initialSelectedIds,
+  currentContentsSizeMB = 0,
+  capacityMB = 16 * 1024, // 16GB default
+  targetCapacity = '16GB',
 }: SpotifyTrackSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SpotifyTrackRow[]>([]);
@@ -32,39 +38,71 @@ export default function SpotifyTrackSelector({
     setSelectedTrackIds(initialSelectedIds);
   }, [initialSelectedIds]);
 
+  // 컴포넌트 마운트 시 인기 트랙 로드
+  useEffect(() => {
+    handleSearch();
+  }, []);
+
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
-      setSearchResults([]);
+      // 검색어가 없을 때 인기 트랙들을 보여주기
+      try {
+        const { data, error } = await supabase
+          .from('spotify_tracks')
+          .select('*')
+          .order('popularity', { ascending: false })
+          .limit(20);
+        
+        if (error) throw error;
+        setSearchResults(data || []);
+      } catch (error) {
+        console.error('Error fetching popular tracks:', error);
+        setSearchResults([]);
+      }
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Spotify에서 검색 및 Supabase에 동기화
+      // 1. 먼저 기존 데이터베이스에서 검색
+      const { data: existingTracks, error: searchError } = await supabase
+        .from('spotify_tracks')
+        .select('*')
+        .or(`name.ilike.%${searchQuery}%,artist_names.cs.{${searchQuery}}`)
+        .order('popularity', { ascending: false })
+        .limit(20);
+
+      if (searchError) throw searchError;
+
+      if (existingTracks && existingTracks.length > 0) {
+        // 기존 데이터에서 찾았으면 바로 표시
+        setSearchResults(existingTracks);
+        setLoading(false);
+        return;
+      }
+
+      // 2. 기존 데이터에 없으면 Spotify에서 검색 및 동기화
       const syncResult = await syncSpotifyTracks(searchQuery, 20);
       if (!syncResult.success) {
         toast.error(syncResult.message);
         return;
       }
-      toast.success(syncResult.message);
+      toast.success(`${syncResult.data?.length || 0}개의 새로운 트랙을 찾았습니다!`);
 
-      // 2. Supabase에서 동기화된 트랙 가져오기
-      const { data, error } = await supabase
+      // 3. 새로 동기화된 트랙 가져오기
+      const { data: newTracks, error: newTracksError } = await supabase
         .from('spotify_tracks')
         .select('*')
-        .filter('id', 'in', `(${syncResult.data?.map((t: SpotifyTrackRow) => t.id).join(',')})`);
+        .or(`name.ilike.%${searchQuery}%,artist_names.cs.{${searchQuery}}`)
+        .order('popularity', { ascending: false })
+        .limit(20);
       
-      if (error) {
-        console.error('Error fetching synced tracks from Supabase:', error);
-        toast.error('동기화된 트랙을 불러오는데 실패했습니다.');
-        setSearchResults([]);
-        return;
-      }
-      setSearchResults(data || []);
+      if (newTracksError) throw newTracksError;
+      setSearchResults(newTracks || []);
 
     } catch (error) {
-      console.error('Spotify search and sync failed:', error);
-      toast.error('스포티파이 검색 및 동기화 중 오류가 발생했습니다.');
+      console.error('Spotify search failed:', error);
+      toast.error('스포티파이 검색 중 오류가 발생했습니다.');
     } finally {
       setLoading(false);
     }
@@ -83,13 +121,38 @@ export default function SpotifyTrackSelector({
 
   const toggleTrackSelection = (trackId: string) => {
     setSelectedTrackIds(prev => {
-      const newSelection = prev.includes(trackId)
+      const isCurrentlySelected = prev.includes(trackId);
+      
+      if (!isCurrentlySelected) {
+        // 선택하려는 경우 용량 체크
+        const newTrackCount = prev.length + 1;
+        const newSpotifySize = newTrackCount * 5; // 각 트랙 5MB
+        const totalSize = currentContentsSizeMB + newSpotifySize;
+        const usagePercentage = (totalSize / capacityMB) * 100;
+        
+        if (usagePercentage > 100) {
+          toast.error(`용량을 초과했습니다. ${targetCapacity} 이하로 선택해주세요.`);
+          return prev;
+        }
+      }
+      
+      const newSelection = isCurrentlySelected
         ? prev.filter(id => id !== trackId)
         : [...prev, trackId];
-      onSelectTracks(newSelection);
       return newSelection;
     });
   };
+
+  // 이전 선택된 ID들을 추적
+  const prevSelectedIds = useRef<string[]>(selectedTrackIds);
+  
+  // selectedTrackIds가 변경될 때마다 부모에게 알리기 (무한 루프 방지)
+  useEffect(() => {
+    if (JSON.stringify(prevSelectedIds.current) !== JSON.stringify(selectedTrackIds)) {
+      prevSelectedIds.current = selectedTrackIds;
+      onSelectTracks(selectedTrackIds);
+    }
+  }, [selectedTrackIds, onSelectTracks]);
 
   return (
     <div className="space-y-6">
