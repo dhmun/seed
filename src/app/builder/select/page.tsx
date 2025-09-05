@@ -339,7 +339,7 @@ export default function ContentSelect() {
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {filteredContents.map((content) => {
+                  {filteredContents.map((content, index) => {
                     const isSelected = selectedIds.includes(content.id);
                     return (
                       <Card
@@ -360,6 +360,7 @@ export default function ContentSelect() {
                               fill
                               className="object-cover"
                               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                              priority={index < 6} // 첫 6개 이미지에 priority 적용
                             />
                           </div>
                           {isSelected && (
