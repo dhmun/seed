@@ -105,8 +105,8 @@ export default function ResultPage() {
     await trackShare('kakao', result.slug);
 
     // 카카오 SDK 로드 체크 (실제 구현 시 필요)
-    if (typeof window !== 'undefined' && (window as any).Kakao) {
-      (window as any).Kakao.Share.sendDefault({
+    if (typeof window !== 'undefined' && window.Kakao) {
+      window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
           title: `${result.name} | 희망의 씨앗 캠페인`,
@@ -308,7 +308,7 @@ export default function ResultPage() {
               </h2>
               
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                "{result.message}"
+                &ldquo;{result.message}&rdquo;
               </p>
 
               {/* 콘텐츠 썸네일 모자이크 */}

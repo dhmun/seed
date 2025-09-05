@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -18,8 +18,12 @@ export const metadata: Metadata = {
     title: "희망의 씨앗 캠페인",
     description: "당신의 선택이 누군가에게는 세상의 전부가 될 수 있습니다.",
   },
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
 };
 
 export default function RootLayout({
@@ -28,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="scroll-smooth">
+    <html lang="ko" className="scroll-smooth" data-scroll-behavior="smooth">
       <body className="font-sans antialiased">
         <div className="min-h-screen bg-gradient-to-br from-warm-ivory via-background to-warm-beige">
           {children}

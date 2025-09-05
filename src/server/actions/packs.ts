@@ -3,6 +3,7 @@
 import { supabaseAdmin, isSupabaseConnected } from '@/lib/supabase';
 import type { Pack, Content } from '@/lib/supabase';
 import { nanoid } from 'nanoid';
+import { getSpotifyTracksByIds } from './spotify';
 
 // Mock 데이터 저장소 (메모리)
 let mockPackCounter = 1;
@@ -12,13 +13,14 @@ export interface CreatePackData {
   name: string;
   message: string;
   selectedContentIds: string[];
+  selectedSpotifyTrackIds?: string[];
 }
 
 export interface PackWithContents extends Pack {
   contents: Content[];
 }
 
-export async function createPack(data: CreatePackData): Promise<{ slug: string; serial: number }> {
+export async function createPack(data: CreatePackData): Promise<{ slug: string; serial: number; allContentIds: string[] }> {
   try {
     // 입력 검증
     if (!data.name || data.name.length > 20) {
@@ -29,7 +31,8 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
       throw new Error('메시지는 1-50자 사이여야 합니다.');
     }
 
-    if (!data.selectedContentIds || data.selectedContentIds.length < 3) {
+    const totalContentCount = (data.selectedContentIds?.length || 0) + (data.selectedSpotifyTrackIds?.length || 0);
+    if (totalContentCount < 3) {
       throw new Error('최소 3개의 콘텐츠를 선택해야 합니다.');
     }
 
@@ -60,7 +63,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
       
       mockPacks.set(shareSlug, mockPack);
       
-      return { slug: shareSlug, serial };
+      return { slug: shareSlug, serial, allContentIds: data.selectedContentIds };
     }
 
     // 트랜잭션 시작 - 미디어팩 시리얼 번호 증가
@@ -92,8 +95,60 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
       throw new Error('미디어팩 생성에 실패했습니다.');
     }
 
-    // Pack Items 생성
-    const packItems = data.selectedContentIds.map(contentId => ({
+    // 모든 콘텐츠 ID를 담을 배열 (영화/드라마 + 음악)
+    const allContentIds = [...data.selectedContentIds];
+
+    // Spotify 트랙 ID가 있으면 처리
+    if (data.selectedSpotifyTrackIds && data.selectedSpotifyTrackIds.length > 0) {
+      try {
+        // 1. spotify_tracks 테이블에서 트랙 상세 정보 조회
+        const spotifyTracks = await getSpotifyTracksByIds(data.selectedSpotifyTrackIds);
+
+        // 2. 조회한 트랙을 'contents' 테이블 형식으로 변환
+        const spotifyContentsToUpsert = spotifyTracks.map(track => ({
+          id: `spotify-${track.id}`, // 고유 ID 생성
+          kind: 'kpop' as const,
+          title: `${track.artist_names.join(', ')} - ${track.name}`,
+          summary: `${track.album_name} 앨범 수록곡입니다.`,
+          thumbnail_url: track.album_image_url || '',
+          size_mb: 5, // 음악은 5MB로 고정
+          is_active: true,
+          tmdb_id: null,
+          tmdb_type: null,
+          release_date: track.release_date ? new Date(track.release_date) : null,
+          genre_ids: null,
+          vote_average: null,
+          vote_count: null,
+          popularity: track.popularity,
+          adult: false,
+          original_language: null,
+          original_title: track.name,
+          backdrop_url: null
+        }));
+        
+        // 3. 변환된 음악 정보를 'contents' 테이블에 저장 (upsert 사용)
+        if (spotifyContentsToUpsert.length > 0) {
+          const { data: upsertedData, error: upsertError } = await supabaseAdmin
+            .from('contents')
+            .upsert(spotifyContentsToUpsert, { onConflict: 'id' })
+            .select('id');
+          
+          if (upsertError) {
+            console.error('Error upserting spotify tracks to contents:', upsertError);
+            throw new Error('음악 콘텐츠 저장에 실패했습니다.');
+          }
+          
+          // 4. 저장된 음악 콘텐츠의 ID를 allContentIds 배열에 추가
+          allContentIds.push(...upsertedData.map(c => c.id));
+        }
+      } catch (error) {
+        console.error('Error processing spotify tracks:', error);
+        // Spotify 트랙 처리 실패시에도 계속 진행하되 에러 로그 남김
+      }
+    }
+
+    // Pack Items 생성 (영화/드라마와 음악 ID 모두 포함)
+    const packItems = allContentIds.map(contentId => ({
       pack_id: pack.id,
       content_id: contentId,
     }));
@@ -109,7 +164,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
       throw new Error('미디어팩 아이템 생성에 실패했습니다.');
     }
 
-    return { slug: shareSlug, serial };
+    return { slug: shareSlug, serial, allContentIds };
   } catch (error) {
     console.error('createPack error:', error);
     if (error instanceof Error) {

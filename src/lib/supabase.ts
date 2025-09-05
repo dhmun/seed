@@ -18,15 +18,21 @@ if (hasValidSupabaseConfig) {
   supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 } else {
   // Mock clients for development
-  supabase = {
-    from: () => ({
-      select: () => ({ error: new Error('Mock mode - Supabase not connected') })
-    })
-  };
-  supabaseAdmin = {
-    from: () => ({
+  const mockTable = {
+    select: () => ({ error: new Error('Mock mode - Supabase not connected') }),
+    insert: () => ({ error: new Error('Mock mode - Supabase not connected') }),
+    update: () => ({ error: new Error('Mock mode - Supabase not connected') }),
+    upsert: () => ({ 
       select: () => ({ error: new Error('Mock mode - Supabase not connected') })
     }),
+    delete: () => ({ error: new Error('Mock mode - Supabase not connected') })
+  };
+  
+  supabase = {
+    from: () => mockTable
+  };
+  supabaseAdmin = {
+    from: () => mockTable,
     rpc: () => ({ error: new Error('Mock mode - Supabase not connected') })
   };
 }
@@ -163,6 +169,47 @@ export type Database = {
         Update: {
           key?: string;
           value?: number;
+        };
+      };
+      spotify_tracks: {
+        Row: {
+          id: string;
+          name: string;
+          artist_names: string[];
+          album_name: string;
+          album_image_url?: string | null;
+          preview_url?: string | null;
+          external_url: string;
+          duration_ms?: number | null;
+          release_date?: string | null;
+          popularity?: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          artist_names: string[];
+          album_name: string;
+          album_image_url?: string | null;
+          preview_url?: string | null;
+          external_url: string;
+          duration_ms?: number | null;
+          release_date?: string | null;
+          popularity?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          artist_names?: string[];
+          album_name?: string;
+          album_image_url?: string | null;
+          preview_url?: string | null;
+          external_url?: string;
+          duration_ms?: number | null;
+          release_date?: string | null;
+          popularity?: number | null;
+          created_at?: string;
         };
       };
     };

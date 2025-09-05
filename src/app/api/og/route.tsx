@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
                   fontWeight: '400',
                 }}
               >
-                "{pack.message}"
+                &ldquo;{pack.message}&rdquo;
               </p>
             </div>
 

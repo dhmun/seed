@@ -17,12 +17,18 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getContentsByIds } from '@/server/actions/contents';
+import { getSpotifyTracksByIds } from '@/server/actions/spotify';
 import { createPack } from '@/server/actions/packs';
 import { createPackSchema } from '@/lib/validations';
 import type { Content } from '@/lib/supabase';
+import { Database } from '@/lib/supabase';
+
+type SpotifyTrackRow = Database['public']['Tables']['spotify_tracks']['Row'];
 
 export default function Customize() {
   const [selectedContents, setSelectedContents] = useState<Content[]>([]);
+  const [selectedSpotifyTracks, setSelectedSpotifyTracks] = useState<SpotifyTrackRow[]>([]);
+  const [selectedSpotifyTrackIds, setSelectedSpotifyTrackIds] = useState<string[]>([]);
   const [packName, setPackName] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -32,10 +38,17 @@ export default function Customize() {
   useEffect(() => {
     async function loadSelectedContents() {
       try {
-        // URL 쿼리에서 선택된 콘텐츠 ID 읽기
+        // URL 쿼리에서 선택된 콘텐츠 ID와 Spotify ID 읽기
         const urlParams = new URLSearchParams(window.location.search);
         const idsParam = urlParams.get('ids');
+        const spotifyIdsParam = urlParams.get('spotifyIds');
         const capacityParam = urlParams.get('capacity');
+        
+        // Spotify 트랙 ID 파싱
+        if (spotifyIdsParam) {
+          const spotifyIds = spotifyIdsParam.split(',').filter(id => id.trim());
+          setSelectedSpotifyTrackIds(spotifyIds);
+        }
         
         if (!idsParam) {
           // URL에 데이터가 없으면 localStorage에서 fallback으로 시도
@@ -52,8 +65,10 @@ export default function Customize() {
         } else {
           // URL 쿼리에서 콘텐츠 ID 파싱
           const contentIds = idsParam.split(',').filter(id => id.trim());
-          const contents = await getContentsByIds(contentIds);
-          setSelectedContents(contents);
+          if (contentIds.length > 0) {
+            const contents = await getContentsByIds(contentIds);
+            setSelectedContents(contents);
+          }
           
           // localStorage에도 저장 (fallback용)
           localStorage.setItem('selectedContentIds', JSON.stringify(contentIds));
@@ -61,6 +76,7 @@ export default function Customize() {
             localStorage.setItem('targetCapacity', capacityParam);
           }
         }
+
       } catch (error) {
         toast.error('선택된 콘텐츠를 불러오는데 실패했습니다.');
         console.error('Error loading selected contents:', error);
@@ -71,6 +87,18 @@ export default function Customize() {
 
     loadSelectedContents();
   }, []);
+
+  // 음악 ID 상태가 변경될 때마다 정보를 가져오는 useEffect
+  useEffect(() => {
+    if (selectedSpotifyTrackIds.length > 0) {
+      getSpotifyTracksByIds(selectedSpotifyTrackIds)
+        .then(setSelectedSpotifyTracks)
+        .catch(error => {
+          toast.error('선택한 음악 정보를 불러오는 데 실패했습니다.');
+          console.error('Error loading spotify tracks:', error);
+        });
+    }
+  }, [selectedSpotifyTrackIds]);
 
   // 실시간 검증
   const packNameError = packName.length > 20 ? '20자 이하로 입력해주세요.' : '';
@@ -111,20 +139,23 @@ export default function Customize() {
         selectedContentIds: selectedContentIds
       });
       
+      const totalContentIds = [...selectedContentIds, ...selectedSpotifyTrackIds];
+      
       createPackSchema.parse({
         name: packName,
         message: message,
-        selectedContentIds: selectedContentIds
+        selectedContentIds: totalContentIds
       });
 
       // 미디어팩 생성
       setSubmitting(true);
       
       try {
-        const { slug, serial } = await createPack({
+        const { slug, serial, allContentIds } = await createPack({
           name: packName,
           message: message,
-          selectedContentIds: selectedContentIds
+          selectedContentIds: selectedContentIds,
+          selectedSpotifyTrackIds: selectedSpotifyTrackIds
         });
 
         // 생성된 미디어팩 정보를 결과 페이지로 전달
@@ -133,7 +164,7 @@ export default function Customize() {
           serial,
           name: packName,
           message: message,
-          selectedContentIds: selectedContentIds
+          selectedContentIds: allContentIds
         };
 
         localStorage.setItem('packResult', JSON.stringify(packResult));
@@ -284,10 +315,11 @@ export default function Customize() {
           <div>
             <Card className="p-6 sticky top-8">
               <h3 className="font-heading font-bold text-lg mb-4">
-                선택된 콘텐츠 ({selectedContents.length}개)
+                선택된 콘텐츠 ({selectedContents.length + selectedSpotifyTracks.length}개)
               </h3>
               
               <div className="space-y-3 max-h-96 overflow-y-auto">
+                {/* TMDB 콘텐츠 */}
                 {selectedContents.map((content, index) => (
                   <div key={content.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <div className="w-12 h-16 bg-muted rounded overflow-hidden shrink-0">
@@ -316,15 +348,51 @@ export default function Customize() {
                     </div>
                   </div>
                 ))}
+                
+                {/* Spotify 트랙 */}
+                {selectedSpotifyTracks.map((track, index) => (
+                  <div key={track.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <div className="w-12 h-12 bg-muted rounded overflow-hidden shrink-0">
+                      {track.album_image_url ? (
+                        <img
+                          src={track.album_image_url}
+                          alt={track.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">🎵</div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm line-clamp-1">{track.name}</h4>
+                      <p className="text-xs text-muted-foreground line-clamp-1">
+                        {track.artist_names.join(', ')} • {track.album_name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          음악
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">5MB</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div className="mt-4 pt-4 border-t">
                 <div className="text-sm text-muted-foreground">
-                  총 용량: <strong>
-                    {selectedContents.reduce((total, content) => total + content.size_mb, 0) >= 1024 ?
-                      `${(selectedContents.reduce((total, content) => total + content.size_mb, 0) / 1024).toFixed(1)}GB` :
-                      `${selectedContents.reduce((total, content) => total + content.size_mb, 0)}MB`}
-                  </strong>
+                  <div>영화/TV: <strong>{selectedContents.length}</strong>개</div>
+                  <div>음악: <strong>{selectedSpotifyTrackIds.length}</strong>개 ({selectedSpotifyTrackIds.length * 5}MB)</div>
+                  <div className="mt-1">총 용량: <strong>
+                    {(() => {
+                      const contentSize = selectedContents.reduce((total, content) => total + content.size_mb, 0);
+                      const spotifySize = selectedSpotifyTrackIds.length * 5;
+                      const totalSize = contentSize + spotifySize;
+                      return totalSize >= 1024 ?
+                        `${(totalSize / 1024).toFixed(1)}GB` :
+                        `${totalSize}MB`;
+                    })()}
+                  </strong></div>
                 </div>
               </div>
             </Card>

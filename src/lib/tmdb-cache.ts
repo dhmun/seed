@@ -36,6 +36,7 @@ class MemoryCache {
     }
     return true;
   }
+   
 
   // 캐시 크기 제한 (메모리 관리)
   private cleanup(): void {
