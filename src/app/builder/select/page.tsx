@@ -104,7 +104,7 @@ export default function ContentSelect() {
 
           const searchResults = await getCachedContents({
             search: searchQuery,
-            kind: selectedFilter !== 'all' && selectedFilter !== 'tv' ? selectedFilter : undefined,
+            kind: selectedFilter !== 'all' && selectedFilter !== 'tv' ? selectedFilter as "movie" | "drama" | "show" | "kpop" | "doc" : undefined,
             page: 1,
             limit: 50,
             sortBy: 'popularity',
