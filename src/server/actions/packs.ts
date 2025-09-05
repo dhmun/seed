@@ -139,7 +139,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
           }
           
           // 4. 저장된 음악 콘텐츠의 ID를 allContentIds 배열에 추가
-          allContentIds.push(...upsertedData.map(c => c.id));
+          allContentIds.push(...upsertedData.map((c: { id: string }) => c.id));
         }
       } catch (error) {
         console.error('Error processing spotify tracks:', error);

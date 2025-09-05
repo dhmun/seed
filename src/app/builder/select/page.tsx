@@ -87,6 +87,9 @@ export default function ContentSelect() {
         return;
       }
 
+      // 유효한 콘텐츠 종류 정의
+      const validKinds: Array<"movie" | "drama" | "show" | "kpop" | "doc"> = ['movie', 'drama', 'show', 'kpop', 'doc'];
+
       try {
         // 검색어가 있으면 서버 검색 사용
         if (searchQuery.trim()) {
@@ -102,9 +105,16 @@ export default function ContentSelect() {
             return;
           }
 
+          // 유효한 콘텐츠 타입인 경우에만 kind 파라미터 설정
+          let kindFilter: "movie" | "drama" | "show" | "kpop" | "doc" | undefined = undefined;
+          const validKinds: Array<"movie" | "drama" | "show" | "kpop" | "doc"> = ['movie', 'drama', 'show', 'kpop', 'doc'];
+          if (validKinds.includes(selectedFilter as any)) {
+            kindFilter = selectedFilter as "movie" | "drama" | "show" | "kpop" | "doc";
+          }
+
           const searchResults = await getCachedContents({
             search: searchQuery,
-            kind: selectedFilter !== 'all' && selectedFilter !== 'tv' ? selectedFilter as "movie" | "drama" | "show" | "kpop" | "doc" : undefined,
+            kind: kindFilter,
             page: 1,
             limit: 50,
             sortBy: 'popularity',
@@ -124,9 +134,9 @@ export default function ContentSelect() {
           ]);
           const combinedContents = [...dramaData.contents, ...showData.contents, ...kpopData.contents];
           setFilteredContents(combinedContents);
-        } else if (selectedFilter !== 'all') {
+        } else if (validKinds.includes(selectedFilter as any)) {
           const filtered = await getCachedContents({
-            kind: selectedFilter,
+            kind: selectedFilter as "movie" | "drama" | "show" | "kpop" | "doc",
             page: 1,
             limit: 100,
             sortBy: 'popularity',
@@ -147,7 +157,7 @@ export default function ContentSelect() {
             content.kind === 'show' || 
             content.kind === 'kpop'
           );
-        } else if (selectedFilter !== 'all' && selectedFilter !== 'spotify') {
+        } else if (validKinds.includes(selectedFilter as any)) {
           filtered = filtered.filter(content => content.kind === selectedFilter);
         }
 
@@ -506,10 +516,14 @@ export default function ContentSelect() {
                                 hasMore: dramaMore.hasMore || showMore.hasMore || kpopMore.hasMore
                               };
                             } else {
+                              // 유효한 콘텐츠 타입인지 확인
+                              const validKinds: Array<"movie" | "drama" | "show" | "kpop" | "doc"> = ['movie', 'drama', 'show', 'kpop', 'doc'];
+                              const kindFilter = validKinds.includes(selectedFilter as any) ? selectedFilter as "movie" | "drama" | "show" | "kpop" | "doc" : undefined;
+                              
                               moreData = await getCachedContents({
                                 page: nextPage,
                                 limit: 50,
-                                kind: selectedFilter !== 'all' && selectedFilter !== 'spotify' ? selectedFilter : undefined,
+                                kind: kindFilter,
                                 sortBy: 'popularity',
                                 sortOrder: 'desc'
                               });
