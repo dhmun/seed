@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
+import { execSync } from 'child_process';
 
 console.log('🚀 Vercel 배포 스크립트 시작...');
 

@@ -64,7 +64,7 @@ INSERT INTO counters (key, value) VALUES ('pack_serial', 0);
 
 -- 시퀀스 증가 함수
 CREATE OR REPLACE FUNCTION increment_counter(counter_key TEXT)
-RETURNS BIGINT AS $$
+RETURNS BIGINT AS $
 DECLARE
     new_value BIGINT;
 BEGIN
@@ -75,7 +75,7 @@ BEGIN
     
     RETURN new_value;
 END;
-$$ LANGUAGE plpgsql;
+$ LANGUAGE plpgsql;
 
 -- RLS 정책 설정
 
@@ -153,3 +153,30 @@ COMMENT ON TABLE packs IS '사용자가 생성한 미디어팩 테이블';
 COMMENT ON TABLE pack_items IS '미디어팩과 콘텐츠의 다대다 관계 테이블';
 COMMENT ON TABLE messages IS '미디어팩에 대한 추가 메시지 테이블';
 COMMENT ON TABLE counters IS '시퀀스 및 카운터 관리 테이블';
+
+-- spotify_tracks table
+CREATE TABLE spotify_tracks (
+    id TEXT PRIMARY KEY, -- Spotify track ID
+    name TEXT NOT NULL,
+    artist_names TEXT[] NOT NULL, -- Array of artist names
+    album_name TEXT NOT NULL,
+    album_image_url TEXT,
+    preview_url TEXT,
+    external_url TEXT NOT NULL, -- Link to Spotify
+    duration_ms INTEGER,
+    release_date DATE,
+    popularity INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Optional: Add indexes for common queries
+CREATE INDEX idx_spotify_tracks_name ON spotify_tracks (name);
+CREATE INDEX idx_spotify_tracks_artist_names ON spotify_tracks USING GIN (artist_names);
+
+-- RLS Policy for spotify_tracks: Public can read
+ALTER TABLE spotify_tracks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can read spotify_tracks" ON spotify_tracks
+    FOR SELECT USING (true);
+
+COMMENT ON TABLE spotify_tracks IS 'Spotify track metadata table';

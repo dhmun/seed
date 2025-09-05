@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 // scripts/sync-tmdb.js
 
 // Supabase 클라이언트와 node-fetch를 가져옵니다.
@@ -120,16 +121,16 @@ function generateMockData(allContents) {
   console.log('const mockContents: Content[] = [');
   
   mockData.slice(0, 100).forEach((content, index) => {
-    console.log(`  {`);
-    console.log(`    id: '${content.id}',`);
-    console.log(`    kind: '${content.kind}',`);
-    console.log(`    title: '${content.title.replace(/'/g, "\\'")}',`);
-    console.log(`    summary: '${content.summary.slice(0, 100).replace(/'/g, "\\'")}...',`);
-    console.log(`    thumbnail_url: '${content.thumbnail_url}',`);
-    console.log(`    size_mb: ${content.size_mb},`);
-    console.log(`    is_active: true,`);
-    console.log(`    created_at: '${content.created_at}'`);
-    console.log(`  }${index < 99 ? ',' : ''}`);
+    console.log(`  {
+    id: '${content.id}',
+    kind: '${content.kind}',
+    title: '${content.title.replace(/'/g, "'\'").replace(/"/g, '\"')}',
+    summary: '${content.summary.replace(/'/g, "'\'").replace(/"/g, '\"')}',
+    thumbnail_url: '${content.thumbnail_url}',
+    size_mb: ${content.size_mb},
+    is_active: true,
+    created_at: '${content.created_at}'
+  }${index < 99 ? ',' : ''}`);
   });
   
   console.log('];');
@@ -203,3 +204,17 @@ async function main() {
 
 // 스크립트 실행
 main();
+
+// --- 추가: 모든 TMDb 데이터 텍스트 파일로 저장 ---
+async function saveAllTmdbData() {
+  const movies = await fetchMultiplePages('movie');
+  const dramas = await fetchMultiplePages('tv');
+  const allData = { movies, dramas };
+  fs.writeFileSync('all_tmdb_data.txt', JSON.stringify(allData, null, 2));
+  console.log('\n📝 모든 TMDb 데이터를 all_tmdb_data.txt 파일에 저장했습니다.');
+}
+
+// `node scripts/sync-tmdb.js --save` 실행 시 모든 데이터 저장
+if (process.argv.includes('--save')) {
+  saveAllTmdbData();
+}

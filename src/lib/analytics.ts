@@ -1,6 +1,6 @@
 // 간단한 분석 유틸리티 함수들
 
-export async function trackEvent(action: string, data: Record<string, any> = {}) {
+export async function trackEvent(action: string, data: Record<string, string | number> = {}) {
   try {
     await fetch('/api/track', {
       method: 'POST',

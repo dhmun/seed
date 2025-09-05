@@ -1,5 +1,3 @@
-'use server';
-
 // Spotify Web API 클라이언트 (Client Credentials Flow)
 class SpotifyClient {
   private accessToken: string | null = null;
@@ -16,7 +14,7 @@ class SpotifyClient {
   private async getAccessToken(): Promise<string> {
     // 토큰이 유효하면 재사용
     if (this.accessToken && Date.now() < this.tokenExpiry) {
-      return this.accessToken;
+      return this.accessToken!;
     }
 
     if (!this.clientId || !this.clientSecret) {
@@ -38,11 +36,15 @@ class SpotifyClient {
       }
 
       const data = await response.json();
+
+      if (!data.access_token) {
+        throw new Error('Spotify API did not return an access token.');
+      }
       
       this.accessToken = data.access_token;
       this.tokenExpiry = Date.now() + (data.expires_in * 1000) - 60000; // 1분 여유
 
-      return this.accessToken;
+      return this.accessToken!;
     } catch (error) {
       console.error('Spotify token error:', error);
       throw new Error('Failed to get Spotify access token');
@@ -213,3 +215,4 @@ export interface SpotifyPlaylist {
 // 싱글톤 인스턴스
 const spotifyClient = new SpotifyClient();
 export default spotifyClient;
+
