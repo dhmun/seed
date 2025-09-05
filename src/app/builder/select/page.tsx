@@ -353,7 +353,7 @@ export default function ContentSelect() {
                       >
                         {/* 썸네일 */}
                         <div className="relative mb-3">
-                          <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                          <div className="relative aspect-[3/4] bg-muted rounded-lg overflow-hidden">
                             <Image
                               src={content.thumbnail_url}
                               alt={content.title}
