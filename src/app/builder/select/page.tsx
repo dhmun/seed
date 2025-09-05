@@ -17,7 +17,7 @@ import {
   Search
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { listContents } from '@/server/actions/contents';
+import { getCachedContents, getPopularContents } from '@/lib/tmdb-cache';
 import { 
   formatFileSize, 
   calculateTotalSize, 
@@ -43,14 +43,30 @@ export default function ContentSelect() {
   const [searchQuery, setSearchQuery] = useState('');
   const [targetCapacity, setTargetCapacity] = useState<'16' | '32'>('16');
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  // 콘텐츠 로드
+  // 초기 콘텐츠 로드 (인기 콘텐츠 우선)
   useEffect(() => {
-    async function loadContents() {
+    async function loadInitialContents() {
       try {
-        const data = await listContents();
-        setContents(data);
-        setFilteredContents(data);
+        // 인기 콘텐츠를 먼저 로드 (빠른 표시)
+        const popularData = await getPopularContents(undefined, 40);
+        setContents(popularData);
+        setFilteredContents(popularData);
+        
+        // 전체 콘텐츠 로드
+        const allData = await getCachedContents({ 
+          page: 1, 
+          limit: 100,
+          sortBy: 'popularity',
+          sortOrder: 'desc'
+        });
+        
+        setContents(allData.contents);
+        setFilteredContents(allData.contents);
+        setHasMore(allData.hasMore);
       } catch (error) {
         toast.error('콘텐츠를 불러오는데 실패했습니다.');
         console.error('Error loading contents:', error);
@@ -59,28 +75,63 @@ export default function ContentSelect() {
       }
     }
 
-    loadContents();
+    loadInitialContents();
   }, []);
 
-  // 필터링
+  // 필터링 및 실시간 검색
   useEffect(() => {
-    let filtered = contents;
+    async function applyFilters() {
+      try {
+        // 검색어가 있으면 서버 검색 사용
+        if (searchQuery.trim()) {
+          const searchResults = await getCachedContents({
+            search: searchQuery,
+            kind: selectedFilter !== 'all' ? selectedFilter : undefined,
+            page: 1,
+            limit: 50,
+            sortBy: 'popularity',
+            sortOrder: 'desc'
+          });
+          setFilteredContents(searchResults.contents);
+          return;
+        }
 
-    // 카테고리 필터
-    if (selectedFilter !== 'all') {
-      filtered = filtered.filter(content => content.kind === selectedFilter);
+        // 카테고리 필터만 적용
+        if (selectedFilter !== 'all') {
+          const filtered = await getCachedContents({
+            kind: selectedFilter,
+            page: 1,
+            limit: 100,
+            sortBy: 'popularity',
+            sortOrder: 'desc'
+          });
+          setFilteredContents(filtered.contents);
+        } else {
+          setFilteredContents(contents);
+        }
+      } catch (error) {
+        // 실패 시 클라이언트 사이드 필터링으로 폴백
+        let filtered = contents;
+
+        if (selectedFilter !== 'all') {
+          filtered = filtered.filter(content => content.kind === selectedFilter);
+        }
+
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          filtered = filtered.filter(content => 
+            content.title.toLowerCase().includes(query) ||
+            content.summary.toLowerCase().includes(query)
+          );
+        }
+
+        setFilteredContents(filtered);
+      }
     }
 
-    // 검색 필터
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(content => 
-        content.title.toLowerCase().includes(query) ||
-        content.summary.toLowerCase().includes(query)
-      );
-    }
-
-    setFilteredContents(filtered);
+    // 검색 디바운싱
+    const timeoutId = setTimeout(applyFilters, 300);
+    return () => clearTimeout(timeoutId);
   }, [contents, selectedFilter, searchQuery]);
 
   // 선택된 콘텐츠들
@@ -278,73 +329,130 @@ export default function ContentSelect() {
           <div className="lg:col-span-3">
             {filteredContents.length === 0 ? (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">조건에 맞는 콘텐츠가 없습니다.</p>
+                <p className="text-muted-foreground">
+                  {searchQuery 
+                    ? `"${searchQuery}"에 대한 검색 결과가 없습니다.`
+                    : '조건에 맞는 콘텐츠가 없습니다.'
+                  }
+                </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredContents.map((content) => {
-                  const isSelected = selectedIds.includes(content.id);
-                  return (
-                    <Card
-                      key={content.id}
-                      className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                        isSelected 
-                          ? 'ring-2 ring-primary-blue bg-primary-blue/5 border-primary-blue' 
-                          : 'hover:shadow-md'
-                      }`}
-                      onClick={() => toggleContent(content.id)}
-                    >
-                      {/* 썸네일 */}
-                      <div className="relative mb-3">
-                        <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
-                          <Image
-                            src={content.thumbnail_url}
-                            alt={content.title}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          />
-                        </div>
-                        {isSelected && (
-                          <div className="absolute top-2 right-2 w-6 h-6 bg-primary-blue rounded-full flex items-center justify-center">
-                            <Check className="w-4 h-4 text-white" />
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredContents.map((content) => {
+                    const isSelected = selectedIds.includes(content.id);
+                    return (
+                      <Card
+                        key={content.id}
+                        className={`p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                          isSelected 
+                            ? 'ring-2 ring-primary-blue bg-primary-blue/5 border-primary-blue' 
+                            : 'hover:shadow-md'
+                        }`}
+                        onClick={() => toggleContent(content.id)}
+                      >
+                        {/* 썸네일 */}
+                        <div className="relative mb-3">
+                          <div className="aspect-[3/4] bg-muted rounded-lg overflow-hidden">
+                            <Image
+                              src={content.thumbnail_url}
+                              alt={content.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                            />
                           </div>
-                        )}
-                      </div>
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 w-6 h-6 bg-primary-blue rounded-full flex items-center justify-center">
+                              <Check className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                        </div>
 
-                      {/* 콘텐츠 정보 */}
-                      <div>
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="font-bold text-sm line-clamp-2">{content.title}</h3>
-                          <Badge variant="outline" className="text-xs ml-2 shrink-0">
-                            {getContentKindLabel(content.kind)}
-                          </Badge>
+                        {/* 콘텐츠 정보 */}
+                        <div>
+                          <div className="flex items-start justify-between mb-2">
+                            <h3 className="font-bold text-sm line-clamp-2">{content.title}</h3>
+                            <Badge variant="outline" className="text-xs ml-2 shrink-0">
+                              {getContentKindLabel(content.kind)}
+                            </Badge>
+                          </div>
+                          
+                          {/* TMDB 메타데이터 추가 정보 */}
+                          <div className="flex items-center gap-2 mb-2">
+                            {content.vote_average && content.vote_average > 0 && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-yellow-500">⭐</span>
+                                <span className="text-xs font-medium">{content.vote_average.toFixed(1)}</span>
+                              </div>
+                            )}
+                            {content.release_date && (
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(content.release_date).getFullYear()}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+                            {content.summary}
+                          </p>
+                          
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">
+                              {formatFileSize(content.size_mb)}
+                            </span>
+                            <Button 
+                              size="sm" 
+                              variant={isSelected ? "default" : "outline"}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleContent(content.id);
+                              }}
+                            >
+                              {isSelected ? '선택됨' : '선택'}
+                            </Button>
+                          </div>
                         </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                {/* 더 보기 버튼 */}
+                {!searchQuery && hasMore && (
+                  <div className="text-center mt-8">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        if (loadingMore) return;
                         
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-                          {content.summary}
-                        </p>
-                        
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground">
-                            {formatFileSize(content.size_mb)}
-                          </span>
-                          <Button 
-                            size="sm" 
-                            variant={isSelected ? "default" : "outline"}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleContent(content.id);
-                            }}
-                          >
-                            {isSelected ? '선택됨' : '선택'}
-                          </Button>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
+                        setLoadingMore(true);
+                        try {
+                          const nextPage = page + 1;
+                          const moreData = await getCachedContents({
+                            page: nextPage,
+                            limit: 50,
+                            kind: selectedFilter !== 'all' ? selectedFilter : undefined,
+                            sortBy: 'popularity',
+                            sortOrder: 'desc'
+                          });
+                          
+                          setContents(prev => [...prev, ...moreData.contents]);
+                          setPage(nextPage);
+                          setHasMore(moreData.hasMore);
+                        } catch (error) {
+                          toast.error('더 많은 콘텐츠를 불러오는데 실패했습니다.');
+                        } finally {
+                          setLoadingMore(false);
+                        }
+                      }}
+                      disabled={loadingMore}
+                    >
+                      {loadingMore ? '로딩 중...' : '더 많은 콘텐츠 보기'}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* 하단 고정 버튼 */}

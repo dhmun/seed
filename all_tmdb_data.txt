@@ -1,0 +1,80 @@
+    id: '1',
+    kind: 'movie',
+    title: '우주전쟁',
+    summary: '전설적인 동명 소설을 새롭게 재해석한 이번 작품은 거대한 침공의 서막을 알린다. 에바 롱고리아와 전설적인 래퍼이자 배우 아이스 큐브, 그리고 마이클 오닐과 이만 벤슨이 합류해, 기...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/yvirUYrva23IudARHn3mMGVxWqM.jpg',
+    size_mb: 3763,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.291Z'
+--
+    id: '2',
+    kind: 'movie',
+    title: 'F1 더 무비',
+    summary: '한때 주목받는 유망주였지만 끔찍한 사고로 F1®에서 우승하지 못하고 한순간에 추락한 드라이버 소니 헤이스. 그의 오랜 동료인 루벤 세르반테스에게 레이싱 복귀를 제안받으며 최하위 팀...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/p6t8zioyQSWHCt0GRnRgsQrb8zx.jpg',
+    size_mb: 7856,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+--
+    id: '3',
+    kind: 'movie',
+    title: '노바디 2',
+    summary: '가족과 소홀해지는 걸 느낀 허치. 오랜만에 가족들과 떠나는 여름 휴가지는 유년 시절의 추억이 깃든 플러머빌. 꿀 같은 휴식을 꿈꿨지만 평온은 온데간데없고… 사건만 터지는데. 일도 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/vBKQuGX0nrx9p8H3j3GGojDYoKH.jpg',
+    size_mb: 6585,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+--
+    id: '4',
+    kind: 'movie',
+    title: '총알 탄 사나이',
+    summary: '단 한 사람만이 경찰 특공대를 이끌고 세상을 구할 특별한 기술을 지녔다… 그는 바로 프랭크 드레빈이다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/aq0JMbmSfPwG8JvAzExJPrBHqmG.jpg',
+    size_mb: 7323,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+--
+    id: '5',
+    kind: 'movie',
+    title: '슈퍼맨',
+    summary: '슈퍼맨은 오늘도 세계 곳곳의 위협에 맞서 싸우지만, 시민들의 반응은 극과 극으로 갈린다. 한편, 렉스 루터는 슈퍼맨을 무너뜨릴 비밀을 손에 넣고 역대 최강의 슈퍼-빌런들과 함께 총...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/kCXGCEsDqjzWJVDyHgBUg0AMetT.jpg',
+    size_mb: 6246,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+--
+    id: '6',
+    kind: 'movie',
+    title: '이니 미니',
+    summary: '20세기 스튜디오에서 선사하는 ⟪이니 미니⟫는 십 대 시절 도주 운전을 맡았던 주인공이 갱생 불가인 전 남자 친구의 목숨을 살리기 위해 옛 고용주의 제안을 받아들여 끔찍한 과거 생...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/vuigDEApkQ3y6NSf9nx2WquGXeI.jpg',
+    size_mb: 5491,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+--
+    id: '7',
+    kind: 'movie',
+    title: '미션 임파서블: 파이널 레코닝',
+    summary: '디지털상의 모든 정보를 통제할 수 있는 사상 초유의 무기로 인해 전 세계 국가와 조직의 기능이 마비되고, 인류 전체가 위협받는 절체절명의 위기가 찾아온다. 이를 막을 수 있는 건 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/5Zxdorl5TharlI9S47YxoKzGCsi.jpg',
+    size_mb: 3339,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+--
+    id: '8',
+    kind: 'movie',
+    title: '극장판 귀멸의 칼날: 무한성편 제 1장 아카자 재래',
+    summary: '혈귀로 변해버린 여동생 네즈코를 인간으로 되돌리기 위해 혈귀를 사냥하는 조직인 《귀살대》에 입대한 카마도 탄지로. 입대 후 동료인 아가츠마 젠이츠, 하시비라 이노스케와 함께 많은 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/m6Dho6hDCcL5KI8mOQNemZAedFI.jpg',
+    size_mb: 5098,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+--
+    id: '9',
+    kind: 'movie',
+    title: '투게더',
+    summary: '관계의 한계에 부딪힌 오래된 커플 팀과 밀리. 어느 날 서로의 몸이 점점 붙어버리기 시작하는데…...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/ivWOD2MiC1HywIPBF2Ei2CN3ywY.jpg',
+    size_mb: 3235,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'

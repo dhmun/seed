@@ -49,11 +49,23 @@ export type Database = {
           id: string;
           kind: 'movie' | 'drama' | 'show' | 'kpop' | 'doc';
           title: string;
+          original_title?: string;
           summary: string;
           thumbnail_url: string;
+          backdrop_url?: string;
           size_mb: number;
           is_active: boolean;
+          tmdb_id?: number;
+          tmdb_type?: 'movie' | 'tv';
+          release_date?: string;
+          genre_ids?: number[];
+          vote_average?: number;
+          vote_count?: number;
+          popularity?: number;
+          adult?: boolean;
+          original_language?: string;
           created_at: string;
+          updated_at?: string;
         };
         Insert: {
           id?: string;

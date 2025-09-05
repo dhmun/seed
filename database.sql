@@ -3,16 +3,28 @@
 -- Enable Row Level Security
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 콘텐츠 테이블
+-- 콘텐츠 테이블 (TMDB 메타데이터 포함)
 CREATE TABLE contents (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     kind TEXT NOT NULL CHECK (kind IN ('movie', 'drama', 'show', 'kpop', 'doc')),
     title TEXT NOT NULL,
+    original_title TEXT, -- TMDB 원제목
     summary TEXT NOT NULL,
     thumbnail_url TEXT NOT NULL,
+    backdrop_url TEXT, -- TMDB 배경 이미지
     size_mb INTEGER NOT NULL CHECK (size_mb > 0),
     is_active BOOLEAN DEFAULT true,
-    created_at TIMESTAMPTZ DEFAULT now()
+    tmdb_id INTEGER, -- TMDB API ID
+    tmdb_type TEXT CHECK (tmdb_type IN ('movie', 'tv')), -- TMDB 타입
+    release_date DATE, -- 출시일
+    genre_ids INTEGER[], -- TMDB 장르 ID 배열
+    vote_average DECIMAL(3,1), -- TMDB 평점 (0.0-10.0)
+    vote_count INTEGER, -- TMDB 투표 수
+    popularity DECIMAL(10,3), -- TMDB 인기도
+    adult BOOLEAN DEFAULT false, -- 성인 콘텐츠 여부
+    original_language TEXT, -- 원본 언어 코드
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now()
 );
 
 -- 미디어팩 테이블
@@ -125,6 +137,12 @@ INSERT INTO contents (kind, title, summary, thumbnail_url, size_mb) VALUES
 -- 인덱스 생성 (성능 최적화)
 CREATE INDEX idx_contents_kind ON contents(kind);
 CREATE INDEX idx_contents_is_active ON contents(is_active);
+CREATE INDEX idx_contents_tmdb_id ON contents(tmdb_id);
+CREATE INDEX idx_contents_tmdb_type ON contents(tmdb_type);
+CREATE INDEX idx_contents_popularity ON contents(popularity DESC);
+CREATE INDEX idx_contents_vote_average ON contents(vote_average DESC);
+CREATE INDEX idx_contents_release_date ON contents(release_date DESC);
+CREATE INDEX idx_contents_genre_ids ON contents USING GIN(genre_ids);
 CREATE INDEX idx_packs_share_slug ON packs(share_slug);
 CREATE INDEX idx_packs_serial ON packs(serial);
 CREATE INDEX idx_pack_items_pack_id ON pack_items(pack_id);

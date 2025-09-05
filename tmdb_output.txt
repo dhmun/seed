@@ -1,0 +1,1035 @@
+
+> hope-seed-campaign@0.1.0 sync:tmdb
+> node scripts/sync-tmdb.js
+
+[dotenv@17.2.2] injecting env (5) from .env.local -- tip: ⚙️  specify custom .env file path with { path: '/custom/path/.env' }
+🚀 TMDb 데이터 동기화를 시작합니다...
+
+📡 영화 데이터 가져오는 중 (총 5 페이지)...
+  - 1페이지 로드 완료 (현재까지 20개)
+  - 2페이지 로드 완료 (현재까지 40개)
+  - 3페이지 로드 완료 (현재까지 60개)
+  - 4페이지 로드 완료 (현재까지 80개)
+  - 5페이지 로드 완료 (현재까지 100개)
+✅ 영화 100개 수집 완료
+📡 TV 데이터 가져오는 중 (총 5 페이지)...
+  - 1페이지 로드 완료 (현재까지 20개)
+  - 2페이지 로드 완료 (현재까지 40개)
+  - 3페이지 로드 완료 (현재까지 60개)
+  - 4페이지 로드 완료 (현재까지 80개)
+  - 5페이지 로드 완료 (현재까지 100개)
+✅ TV 100개 수집 완료
+
+🎬 영화 100개, 📺 드라마 100개 수집 완료
+
+🔄 데이터 변환 중...
+
+✅ 총 159개의 유효한 콘텐츠 변환 완료
+
+⚠️  Supabase 환경변수가 설정되지 않아 Mock 모드로 실행합니다.
+📝 Mock 데이터 샘플을 콘솔에 출력합니다:
+// src/server/actions/contents.ts 파일의 mockContents 배열을 아래 데이터로 교체하세요
+const mockContents: Content[] = [
+  {
+    id: '1',
+    kind: 'movie',
+    title: '우주전쟁',
+    summary: '전설적인 동명 소설을 새롭게 재해석한 이번 작품은 거대한 침공의 서막을 알린다. 에바 롱고리아와 전설적인 래퍼이자 배우 아이스 큐브, 그리고 마이클 오닐과 이만 벤슨이 합류해, 기...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/yvirUYrva23IudARHn3mMGVxWqM.jpg',
+    size_mb: 3763,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.291Z'
+  },
+  {
+    id: '2',
+    kind: 'movie',
+    title: 'F1 더 무비',
+    summary: '한때 주목받는 유망주였지만 끔찍한 사고로 F1®에서 우승하지 못하고 한순간에 추락한 드라이버 소니 헤이스. 그의 오랜 동료인 루벤 세르반테스에게 레이싱 복귀를 제안받으며 최하위 팀...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/p6t8zioyQSWHCt0GRnRgsQrb8zx.jpg',
+    size_mb: 7856,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '3',
+    kind: 'movie',
+    title: '노바디 2',
+    summary: '가족과 소홀해지는 걸 느낀 허치. 오랜만에 가족들과 떠나는 여름 휴가지는 유년 시절의 추억이 깃든 플러머빌. 꿀 같은 휴식을 꿈꿨지만 평온은 온데간데없고… 사건만 터지는데. 일도 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/vBKQuGX0nrx9p8H3j3GGojDYoKH.jpg',
+    size_mb: 6585,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '4',
+    kind: 'movie',
+    title: '총알 탄 사나이',
+    summary: '단 한 사람만이 경찰 특공대를 이끌고 세상을 구할 특별한 기술을 지녔다… 그는 바로 프랭크 드레빈이다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/aq0JMbmSfPwG8JvAzExJPrBHqmG.jpg',
+    size_mb: 7323,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '5',
+    kind: 'movie',
+    title: '슈퍼맨',
+    summary: '슈퍼맨은 오늘도 세계 곳곳의 위협에 맞서 싸우지만, 시민들의 반응은 극과 극으로 갈린다. 한편, 렉스 루터는 슈퍼맨을 무너뜨릴 비밀을 손에 넣고 역대 최강의 슈퍼-빌런들과 함께 총...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/kCXGCEsDqjzWJVDyHgBUg0AMetT.jpg',
+    size_mb: 6246,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '6',
+    kind: 'movie',
+    title: '이니 미니',
+    summary: '20세기 스튜디오에서 선사하는 ⟪이니 미니⟫는 십 대 시절 도주 운전을 맡았던 주인공이 갱생 불가인 전 남자 친구의 목숨을 살리기 위해 옛 고용주의 제안을 받아들여 끔찍한 과거 생...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/vuigDEApkQ3y6NSf9nx2WquGXeI.jpg',
+    size_mb: 5491,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '7',
+    kind: 'movie',
+    title: '미션 임파서블: 파이널 레코닝',
+    summary: '디지털상의 모든 정보를 통제할 수 있는 사상 초유의 무기로 인해 전 세계 국가와 조직의 기능이 마비되고, 인류 전체가 위협받는 절체절명의 위기가 찾아온다. 이를 막을 수 있는 건 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/5Zxdorl5TharlI9S47YxoKzGCsi.jpg',
+    size_mb: 3339,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '8',
+    kind: 'movie',
+    title: '극장판 귀멸의 칼날: 무한성편 제 1장 아카자 재래',
+    summary: '혈귀로 변해버린 여동생 네즈코를 인간으로 되돌리기 위해 혈귀를 사냥하는 조직인 《귀살대》에 입대한 카마도 탄지로. 입대 후 동료인 아가츠마 젠이츠, 하시비라 이노스케와 함께 많은 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/m6Dho6hDCcL5KI8mOQNemZAedFI.jpg',
+    size_mb: 5098,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '9',
+    kind: 'movie',
+    title: '투게더',
+    summary: '관계의 한계에 부딪힌 오래된 커플 팀과 밀리. 어느 날 서로의 몸이 점점 붙어버리기 시작하는데…...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/ivWOD2MiC1HywIPBF2Ei2CN3ywY.jpg',
+    size_mb: 3235,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '10',
+    kind: 'movie',
+    title: '쥬라기 월드: 새로운 시작',
+    summary: '지구 최상위 포식자가 된 공룡들이 인간 세상으로 나온 5년 후, 인간과 공룡의 위태로운 공존이 이어지는 가운데 인류를 구할 신약 개발을 위해 육지, 하늘, 바다를 지배하는 가장 거...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/ygr4hE8Qpagv8sxZbMw1mtYkcQE.jpg',
+    size_mb: 7306,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '11',
+    kind: 'movie',
+    title: '배드 가이즈 2',
+    summary: '착하게 살기 위해 무지하게 애쓰는 자타공인 최고의 나쁜 녀석들이 새롭게 등장한 \'배드 걸즈\'로 인해 일생일대의 글로벌 범죄 작전에 휘말리며 벌어지는 범죄오락액션 블록버스터...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/1oG69MtmZGovhho0pPgRY9d1qrU.jpg',
+    size_mb: 4604,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '12',
+    kind: 'movie',
+    title: '케이팝 데몬 헌터스',
+    summary: '케이팝 슈퍼스타 루미, 미라, 조이. 매진을 기록하는 대형 스타디움 공연이 없을 때면 이들은 또 다른 활동에 나선다. 바로 비밀 능력을 이용해 팬들을 초자연적 위협으로부터 보호하는...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/k7DCwySN2XGZ67qcz2ADbgmGwzG.jpg',
+    size_mb: 3275,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '13',
+    kind: 'movie',
+    title: '나는 네가 지난 여름에 한 일을 알고 있다',
+    summary: '치명적인 교통사고를 일으킨 다섯 명의 친구들이 잘못을 숨기기로 결심한다. 그로부터 1년 후, 그들의 과거가 다시 그들을 찾아오고, 누군가가 그들이 지난 여름에 저지른 일을 알고 있...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/V3w8ol6OT1vrQwc2OHiS2YBa6Z.jpg',
+    size_mb: 6052,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '14',
+    kind: 'movie',
+    title: '그렇게 난 갱스터가 되었다',
+    summary: '무소불위의 힘을 좇아 암흑가에서 차근차근 입지를 다져온 야심 찬 갱스터. 무장 강도, 마약 거래 등 온갖 범죄를 발판 삼아 정점을 향해 올라가던 중, 마침내 큰물에서 놀 기회를 거...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/kXfR0pprbVDKejYvppgO1U7XN4C.jpg',
+    size_mb: 5683,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '15',
+    kind: 'movie',
+    title: '드래곤 길들이기',
+    summary: '수백년간 지속되어온 바이킹과 드래곤의 전쟁. 드래곤을 없애는 것이 삶의 모든 목적인 바이킹들과 다른 신념을 가진 \'히컵\'은 무리 속에 속하지 못하고 족장인 아버지에게도 인정받지 못...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/8vywrRg1wrY4fo7EqgrFmUJgchG.jpg',
+    size_mb: 4849,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '16',
+    kind: 'movie',
+    title: '스트라이킹 레스큐',
+    summary: '평범한 시민 바이 안(토니 자)의 아내와 딸이 마약 밀매범들에게 무참하게 살해 당하자 분노에 찬 바이 안은 조직 보스의 딸을 납치하며 복수를 꾀하는데.....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/npLvwol2oZGLc0VeYYxJ72KXYwY.jpg',
+    size_mb: 7314,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '17',
+    kind: 'movie',
+    title: '베테랑',
+    summary: '아프가니스탄 전쟁에 참전했던 군인이 마약상과 정보기관이 연루된 음모를 파헤친다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/i1gSsXTWtCmNQArmIeUpAysHEmi.jpg',
+    size_mb: 3381,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '18',
+    kind: 'movie',
+    title: '웨폰',
+    summary: '평범한 수요일, 어느 마을 학교의 같은 반 학생 17명이 등교하지 않는다. 그날 새벽 2시 17분, 잠에서 깬 아이들이 어둠 속으로 달려가 돌아오지 않았기 때문이다. 유일하게 남은...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/4Kk006xbaZ7DUKYrLicM2b3fAWw.jpg',
+    size_mb: 4810,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '19',
+    kind: 'movie',
+    title: '목요일 살인 클럽',
+    summary: '억누를 수 없는 4명의 은퇴자들이 재미 삼아 미제 살인 사건을 해결하며 시간을 보내지만, 그들의 평범한 탐정 놀이는 진짜 누가 저지른 범죄인지 알게 되면서 스릴 넘치는 전환점을 맞...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/9EJQVeZagMBepJtbUyLnrY0kDAi.jpg',
+    size_mb: 5048,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '20',
+    kind: 'movie',
+    title: '엘리오',
+    summary: '세상 그 어디에서도 소속감을 느끼지 못한 채, 외계인의 납치를 꿈꾸는 외톨이 소년 엘리오. 그러던 어느 날 작은 오해로 인해 지구 대표로 우주에 소환되고, 그곳에서 자신과는 너무도...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/ymd7E8ZRXOfOpJ418rgGtEdVmEN.jpg',
+    size_mb: 3749,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '21',
+    kind: 'movie',
+    title: '골드러시 갱',
+    summary: '2차 세계 대전이 끝나갈 무렵, 한 무리의 무법자들과 그들을 이끄는 리더가 일본 군대와 숙적에 맞서 금을 가득 실은 기차를 털고자 한다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/eK9T4CEh4YYhmOXI4NAFdEerpb4.jpg',
+    size_mb: 5053,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '22',
+    kind: 'movie',
+    title: '폴 포 미',
+    summary: '여동생의 새 약혼자를 미심쩍게 여기던 릴리. 그런데 본인의 삶에 매력적인 낯선 남자가 등장하면서, 순식간에 욕망의 소용돌이에 휘말리게 된다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/nxW1kVYMps37Yys3azPo9KXsWNT.jpg',
+    size_mb: 5268,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '23',
+    kind: 'movie',
+    title: '컨저링: 마지막 의식',
+    summary: '1986년 펜실베니아, 자신의 집에 사악한 존재가 들어왔다고 주장하는 스멀 일가를 조사하던 \'워렌\' 부부가 지금껏 마주한 적 없는 가장 위험하고 강력한 악령에 맞서는 \'컨저링\' 시...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/y9jKDJuf5WCDjSPsqkt1cb0JHGm.jpg',
+    size_mb: 4943,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '24',
+    kind: 'movie',
+    title: '오시리스',
+    summary: '작전을 수행 중이던 특수부대 요원들이 정체불명의 우주선에 의해 갑작스럽게 납치된다. 눈을 뜬 그들은 외계 우주선 안에서 자신들이 무자비한 외계 종족의 사냥감이 되었음을 깨닫고, 생...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/3YtZHtXPNG5AleisgEatEfZOT2w.jpg',
+    size_mb: 4841,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '25',
+    kind: 'movie',
+    title: '프리키 프라이데이 2',
+    summary: '엄마 테스와 딸 애나가 서로 몸이 바뀌는 대환장 바디 체인지를 겪은 지도 어느덧 22년이 흐른 지금. 성공한 심리학자로서 첫 책 출간을 앞두고 책 사인회를 준비 중인 테스. 팝스타...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/cMOP2GgqyEzSmSgHcPBSJmMmNw.jpg',
+    size_mb: 6747,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '26',
+    kind: 'movie',
+    title: '판타스틱 4: 새로운 출발',
+    summary: '1960년대, 전 세계적인 관심 속 우주로 떠난 4명의 엘리트 우주비행사 ‘리드 리처드’, ‘수잔 스톰’, ‘조니 스톰’, ‘벤 그림’은 예기치 못한 사고로 우주 방사능에 노출되면...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/sHgIQvDlk5188wo9jM8IKFeyJUd.jpg',
+    size_mb: 3103,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '27',
+    kind: 'movie',
+    title: '호스타일 테이크오버',
+    summary: '전설적인 킬러 피트(Pete Strykyr)는 어느 날 조직의 보스가 자신을 ‘배신자’로 오해하면서 숨통이 조여온다. 도시를 뒤흔드는 암살자들의 맹공 속에서, 그는 즉석에서 펼쳐지...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/vntwlS3CAKfoLTs90GaoK6lymBC.jpg',
+    size_mb: 4779,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '28',
+    kind: 'movie',
+    title: '아이스 로드: 복수',
+    summary: '“빙하 위에 펼쳐진 새롭고 위험한 여정”  얼어붙은 도로 대신, 네팔의 설산 ‘하늘로 가는 길’이 배경이다. 첫 번째 영화에서의 비극 이후, 마이크 맥캔(리암 니슨 분)은 형의 유...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/cQN9rZj06rXMVkk76UF1DfBAico.jpg',
+    size_mb: 7006,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '29',
+    kind: 'movie',
+    title: '고백의 역사',
+    summary: '사랑에 빠진 10대 소녀, 학교 최고 인기남의 마음을 얻기 위해 곱슬머리를 생머리로 바꾸기로 결심한다. 하지만 새 전학생의 등장으로 모든 것이 달라진다. 1998년, 열아홉 소녀 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/hOi5K1tx8aAZN239VU1qzvyao87.jpg',
+    size_mb: 3198,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '30',
+    kind: 'movie',
+    title: '나타지마동요해',
+    summary: '"그가 돌아왔다, 더욱 강력해진 영웅의 전설" 천계의 시련 이후, 혼은 유지했으나 육신이 소멸 위기에 처한 나타와 오병. 태을진인은 일곱 빛깔의 보련으로 그들의 육신을 재건하려 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/bTMf8M7rZ21fChGdtsZtJj4Dfqh.jpg',
+    size_mb: 7890,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '31',
+    kind: 'movie',
+    title: '릴로 & 스티치',
+    summary: '보송보송한 파란 솜털, 호기심 가득한 큰 눈, 장난기 가득한 웃음을 가졌지만 가장 위험한 실험체 취급을 받던 스티치는 우주에서 도망쳐 지구의 하와이 섬에 불시착하게 된다. 단짝 친...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/ww7jn7lv1YzTAGd5m0R6CP1VXAs.jpg',
+    size_mb: 7849,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '32',
+    kind: 'movie',
+    title: '트리플 엑스',
+    summary: '싸이렌이 온 거리를 울려 퍼지며 요란한 추격씬이 벌어지는 도중 한 녀석이 콜벳를 몰고 다리를 돌진, 200미터 높이에서 자동차 번지를 시도한다. 짜릿한 곡예를 선보인 후 낙하산을 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/xeEw3eLeSFmJgXZzmF2Efww0q3s.jpg',
+    size_mb: 5790,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '33',
+    kind: 'movie',
+    title: '발레리나',
+    summary: '살해당한 아버지의 복수를 원하는 이브는 전설적인 킬러 존 윅을 배출한 암살자 양성 조직 루스카 로마에서 혹독한 훈련을 거쳐 발레리나이자 킬러로 성장한다. 아버지의 죽음에 얽힌 자들...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/f9iSnN9yiedMgjGX4wQnHk3GZpB.jpg',
+    size_mb: 4881,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '34',
+    kind: 'movie',
+    title: '썬더볼츠*',
+    summary: '어벤져스가 사라진 후, 세계 최대의 위협과 마주한 세상을 구하기 위해 전직 스파이, 암살자, 살인 청부 업자 등 마블의 별난 놈들이 펼치는 예측불허 팀플레이를 담은 액션 블록버스터...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/1lI4iDsaVnOnnZPI9igWkL8jHPL.jpg',
+    size_mb: 6501,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '35',
+    kind: 'movie',
+    title: '초대의 법칙',
+    summary: '초대의 목적은 단 하나 새로운 관계가 가장 유혹적이다. 타인이 더 강렬하다. 관전은 더 짜릿하다. 한 사람과 단 한 번의 관계. 완벽한 절정을 지켜본다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/yOshvC87ZSszFrDgrLdSWbSAvh3.jpg',
+    size_mb: 7080,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '36',
+    kind: 'movie',
+    title: '사조영웅전: 협지대자',
+    summary: '오랜 세월 떠돌며 무공을 쌓다가 조국 남송으로 돌아온 난세의 영웅 ‘곽정’. 과거의 인연을 매정하게 뒤로하고 남송을 집어삼키려는 야욕을 숨기지 않는 ‘대칸’. 두 무림 강호들은 전...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/atVsPpLfHrz3koIRfeZMqWVZDmu.jpg',
+    size_mb: 4635,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '37',
+    kind: 'movie',
+    title: '파이널 데스티네이션: 블러드라인',
+    summary: '끝없는 악몽에 시달리던 스테파니는 그 원인을 찾던 중 집안 대대로 내려오는 죽음의 저주와 그 실체를 알게 된다. 놀랍게도, 죽음의 순서가 자신의 가족에게 이어졌음을 알게 되는데.....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/agaIglFrRGuUQOzkhzlrvcjJgt2.jpg',
+    size_mb: 6354,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '38',
+    kind: 'movie',
+    title: '새엄마의 욕망',
+    summary: '미모의 아내를 얻어 주위의 부러움을 받던 상진은 아내의 친구 지안에게 재수중인 아들의 과외 선생을 맡아줄 것을 부탁하고, 일찍 퇴근한 상진은 우연히 지안의 샤워하는 모습을 보게 되...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/rYC6UyML4CU4zYiZVbDMrwnGyWW.jpg',
+    size_mb: 3753,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '39',
+    kind: 'movie',
+    title: '메간 2.0',
+    summary: '강제 종료 후 다시 돌아온 돌AI ‘메간’. 쌍돌AI ‘아멜리아’의 위협으로 ‘메간’의 유일한 친구 ‘케이디’ 목숨이 위태로워지자 ‘젬마’의 기술로 완전히 새롭게 진화한 메간이 다...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/5dDIFCUsDD5rFvBmT8Hl3bwXAm0.jpg',
+    size_mb: 3536,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '40',
+    kind: 'movie',
+    title: '더 픽업',
+    summary: '서로 삐걱대는 두 명의 무장 트럭 운전기사 러셀 과 트래비스 가 조이 가 이끄는 무자비한 범죄자들에게 습격당하며 이들의 일상적인 현금 수송 업무는 위험천만해진다. 혼돈의 상황에서 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/5nzV0j5nDywpoUfCcBHvnWzGNbL.jpg',
+    size_mb: 7580,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '41',
+    kind: 'movie',
+    title: '28년 후',
+    summary: '28년 전 생물학 무기 연구소에서 세상을 재앙으로 몰아넣은 바이러스가 유출된 후, 일부 생존자들이 모여 철저히 격리된 채 살아가는 섬 홀리 아일랜드. 이곳에서 태어나 한 번도 섬 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/zRo90O0bTKJem1aDgVa6Sm0gthE.jpg',
+    size_mb: 4235,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '42',
+    kind: 'movie',
+    title: '봉신연의 II: 서기전란',
+    summary: '주왕조와 은나라의 패권 다툼이 본격화되는 가운데, 주나라의 근거지인 서기(西岐)는 거센 전쟁의 불길에 휩싸인다.  무너져가는 질서 속에서 인간과 신, 요괴가 얽힌 복잡한 음모가 펼...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/5bBgvH3hTxlANUsLP1ov0lEKmJp.jpg',
+    size_mb: 3010,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '43',
+    kind: 'movie',
+    title: '베스트 키드: 레전드',
+    summary: '엄마와 뉴욕으로 건너간 10대 소년 리퐁이 무술 대결을 위해 쿵후와 가라테의 전설들과 함께 훈련을 하면서 벌어지는 이야기를 다룬 극영화...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/AEgggzRr1vZCLY86MAp93li43z.jpg',
+    size_mb: 7366,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '44',
+    kind: 'movie',
+    title: '브링 허 백',
+    summary: '아빠의 죽음 후 새엄마에게 입양된 남매 앤디와 파이퍼. 평화로운 집, 따뜻한 보금자리에서의 안식도 잠시 새엄마는 두 남매 사이를 갈라놓으며 앤디와 파이퍼를 혼란에 빠트린다. 고립된...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/A4W0yRN7Xy6JLIhRymIh5plK2Zj.jpg',
+    size_mb: 5839,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '45',
+    kind: 'movie',
+    title: '포풍추영',
+    summary: '첨단 감시 시스템과 삼엄한 보안망을 무력화하고, 수십억을 탈취한 정체불명의 범죄 조직. 통제 불능의 범죄에 마카오 경찰은 결국 은퇴한 전설의 범죄 추적 전문가 ‘황더중’에게 도움을...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/pUCkdO40PWHdvU1GEYV6ywY7li2.jpg',
+    size_mb: 5230,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '46',
+    kind: 'movie',
+    title: '스머프',
+    summary: '언제나 노래와 춤, 흥으로 가득한 해피 스머프 마을. 그러던 어느 날, 마을을 이끄는 ‘파파 스머프’가 거대한 소용돌이에 휘말려 납치된다. 특별한 재능도, 좋아하는 것도 없이 아직...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/1lQHA18T32JyIonQUkSWhMwinjm.jpg',
+    size_mb: 6576,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '47',
+    kind: 'movie',
+    title: '윌리엄 텔',
+    summary: '"용기의 전설, 새로운 서사로 깨어나다" 14세기 스위스, 합스부르크 왕가의 압제 속에서 조용한 마을의 삶이 위협받는다. 전직 십자군이자 사냥꾼 윌리엄 텔은 가족과 마을을 지키기...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/8SdaetXSTPyQVDb5pTEPRLBSx15.jpg',
+    size_mb: 4414,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '48',
+    kind: 'movie',
+    title: '윌리엄 텔',
+    summary: '"용기의 전설, 새로운 서사로 깨어나다" 14세기 스위스, 합스부르크 왕가의 압제 속에서 조용한 마을의 삶이 위협받는다. 전직 십자군이자 사냥꾼 윌리엄 텔은 가족과 마을을 지키기...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/8SdaetXSTPyQVDb5pTEPRLBSx15.jpg',
+    size_mb: 3612,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '49',
+    kind: 'movie',
+    title: '너에게로 가는 길',
+    summary: '완벽한 계획이 서 있는 인생을 시작하기에 앞서 친구들과 함께 유럽 여행을 떠난 젊은 여성 헤더는 잭과 우연히 마주친다. 두 사람 사이에는 즉시 로맨스의 불꽃이 튀고, 깊은 감정적 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/gcfRlj215gUWxrEq9UxFiREwtWX.jpg',
+    size_mb: 6908,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '50',
+    kind: 'movie',
+    title: '컨저링',
+    summary: '1971년 로드 아일랜드, 해리스빌. 페론 가족은 꿈에 그리던 새 집으로 이사를 간다. 물론 1863년에 그 집에서 일어난 끔찍한 살인 사건을 전혀 몰랐다. 또한 그 이후에 일어난...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/pWpTToZ32bG09PaZ1rvYG5mpOyV.jpg',
+    size_mb: 4492,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '51',
+    kind: 'movie',
+    title: '버려진 남자',
+    summary: '범죄를 저지른 사람은 형이지만, 가족의 요구로 그 죄를 대신 뒤집어쓰고 복역한 바란. 출소한 후에 새로운 삶을 시작하려 하지만 상처 입은 영혼은 시간이 흘러도 치유되지 않는다. 바...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/5uA8mPM1Dp2vSkdHqlBGvZ3M8Ob.jpg',
+    size_mb: 7412,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '52',
+    kind: 'movie',
+    title: '이 달의 점원',
+    summary: '코스코 스타일의 수퍼마켓을 무대로 매달 우승자가 섹시한 여종업원 에이미(제시카 심슨)와 하룻밤을 보낼 수 있는 `이 달의 점원` 상을 놓고 라이벌전을 벌이는 내용을 담고 있다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/vfALEF9wz4CEep071iOwM5Qqd17.jpg',
+    size_mb: 4289,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '53',
+    kind: 'movie',
+    title: 'A MINECRAFT MOVIE 마인크래프트 무비',
+    summary: '왕년의 게임 챔피언이었지만 지금은 폐업 직전의 게임샵 주인이 된 \'개릿\'과 엄마를 잃고 낯선 동네로 이사 온 남매 \'헨리\'와 \'나탈리\' 그리고 그들을 돕는 부동산 중개업자 \'던\'....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/k5aQ2TqKcQFwPoXHkpAGoKNVDLZ.jpg',
+    size_mb: 7351,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '54',
+    kind: 'movie',
+    title: '노바디',
+    summary: '비범한 과거를 숨긴 채 남들과 다를 바 없는 평범한 일상을 사는 한 가정의 가장 ‘허치’ 매일 출근을 하고, 분리수거를 하고 일과 가정 모두 나름 최선을 다하지만 아들한테는 무시당...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/oXQtH8O7pCvXaDKGB8OAjiPVDi5.jpg',
+    size_mb: 3835,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '55',
+    kind: 'movie',
+    title: '나의 잘못',
+    summary: '노아는 남자 친구와 친구들이 있는 동네를 뒤로하고 엄마의 새 부자 남편 저택으로 이사를 가게 된다. 의붓오빠 닉과는 첫 만남부터 삐걱댔지만 곧 서로에게 이끌려 금지된 관계를 맺는다...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/duT8Vks5FXwDkpxoR84xb2a6VB6.jpg',
+    size_mb: 3936,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '56',
+    kind: 'movie',
+    title: '모아나 2',
+    summary: '바다를 누볐던 선조들에게서 예기치 못한 부름을 받은 모아나가 마우이와 다시 만나 새로운 선원들과 함께 오랫동안 잊혀진 멀고 위험한 바다 너머로 떠나는 특별한 모험을 담은 이야기...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/hwmwTFtMbzxAWbIOp1RyyiOCyx0.jpg',
+    size_mb: 6504,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '57',
+    kind: 'movie',
+    title: '인터스텔라',
+    summary: '세계 각국의 정부와 경제가 완전히 붕괴된 미래가 다가온다. 지난 20세기에 범한 잘못이 전 세계적인 식량 부족을 불러왔고, NASA도 해체되었다. 나사 소속 우주비행사였던 쿠퍼는 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/evoEi8SBSvIIEveM3V6nCJ6vKj8.jpg',
+    size_mb: 5999,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '58',
+    kind: 'movie',
+    title: '의문의 발신자: 고등학교 캣피싱 사건',
+    summary: '언젠가부터 상스러운 욕설 메시지가 한 10대 소녀와 남자 친구의 휴대폰을 쉴 새 없이 울린다. 누가, 왜 이런 문자를 보내는 걸까? 반전을 거듭하며 충격적인 진실을 밝혀내는 다큐멘...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/kaWkPgfcA0lIDOHNskmgcihXUC9.jpg',
+    size_mb: 6812,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '59',
+    kind: 'movie',
+    title: '아니말',
+    summary: '전통적인 황소 경주로 유명한 지역인 프랑스 카마르그에서는 인간과 짐승 사이의 날렵함과 상호 존중이 숨 막히는 장관을 이룬다. 이 남성 중심 세계에서, 스물두 살 네지마가 매년 열리...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/htOG0XTgTLTSIraMvc468XZsUKP.jpg',
+    size_mb: 6149,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '60',
+    kind: 'movie',
+    title: '컨저링 3: 악마가 시켰다',
+    summary: '1981년, 미국 역사상 최초로 잔혹한 살인사건의 용의자가 악마가 살해하도록 시켰다고 주장하는 초유의 사태가 일어난다. 그리고 사건의 배후에는 악마에게 빙의된 소년이 있다. 살인사...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/yxPlLa5p54Wk1o2koiW4hqn4wfG.jpg',
+    size_mb: 6913,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '61',
+    kind: 'movie',
+    title: '컴패니언',
+    summary: '서로에게 딱 맞는 커플 ‘아이리스’와 ‘조시’는 친구들과 함께 호숫가의 별장으로 호화로운 휴가를 떠난다. 하지만 그곳에는 충격적인 사건이 기다리고 있는데…...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/dq7CEYFCvQPfYIpAXOvJr3w6VLY.jpg',
+    size_mb: 4688,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '62',
+    kind: 'movie',
+    title: '아버지라는 것',
+    summary: 'LA 외곽의 작은 마을에서 학교 경비원으로 일하는 션은 어린 시절의 트라우마와 직업적 상황 때문에 곧 아버지가 된다는 것에 도통 자신감이 없다. 어느 날 야간 근무 중 정체불명의 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/Of1UCdomAu0mJY2SNHHGjhnvx9.jpg',
+    size_mb: 5186,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '63',
+    kind: 'movie',
+    title: '레고 디즈니 프린세스: 빌런 집합',
+    summary: '공주들이 힘을 합쳐 악당들과 맞선다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/ajcRSuv1rYbrDxnlNN5xx5H44Ft.jpg',
+    size_mb: 4387,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '64',
+    kind: 'movie',
+    title: '데드풀과 울버린',
+    summary: '히어로 생활에서 은퇴한 후, 평범한 중고차 딜러로 살아가던 데드풀이 예상치 못한 거대한 위기를 맞아 모든 면에서 상극인 울버린을 찾아가게 되며 펼쳐지는 도파민 폭발 액션 블록버스터...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/dsfAcQ5J7TPOpJgcX8R1lRBqiMK.jpg',
+    size_mb: 5999,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '65',
+    kind: 'movie',
+    title: '머더 컴퍼니: 살인 중대',
+    summary: '1944년 제82 공수단은 노르망디 상륙작전을 위해 나치 수송대의 사령관을 제거하는 특명을 받는다. 공수단과 레지스탕스로 결성된 혼성부대는 일명 살인중대로 불리며 매복을 모두 각개...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/vP4mAXeJmBb5PkmcQ2XUQWrmVHE.jpg',
+    size_mb: 3065,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '66',
+    kind: 'movie',
+    title: '어벤져스',
+    summary: '에너지원 큐브를 이용한 적의 등장으로 인류가 위험에 처하자 국제평화유지기구인 쉴드의 국장 닉 퓨리는 어벤져스 작전을 위해 전 세계에 흩어져 있던 슈퍼히어로들을 찾아나선다. 아이언맨...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/krgjV3rJtBcEpQehODKXNCt6uFL.jpg',
+    size_mb: 3374,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '67',
+    kind: 'movie',
+    title: '옥스퍼드에서의 날들',
+    summary: '옥스퍼드에서 공부하고 싶다는 꿈을 이루게 된 야심 찬 미국인 여성. 그런데 비밀을 감춘 매력적인 영국인과 사랑에 빠지면서, 완벽한 계획에 따라 살아가던 인생이 뒤흔들리기 시작한다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/tgpxUR69dwNAvuQZxDfiNlYWClP.jpg',
+    size_mb: 3239,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '68',
+    kind: 'movie',
+    title: '나타지마동강세',
+    summary: '태을진인의 실수로 영주(선) 대신 마환(악)은 이정의 아들 나타로 환생한다. 3년 후, 천겁을 맞고 사라져야 할 운명을 타고난 나타는 마을을 혼란에 빠트려 사람들의 미움을 사게 된...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/zb8xejiaNR0snSJgDepwFQUIi2e.jpg',
+    size_mb: 3691,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '69',
+    kind: 'movie',
+    title: '워킹맨',
+    summary: '전직 블랙 옵스 요원이었던 레본 케이드(제이슨 스타뎀)는 평범한 건설 노동자로 살아가며 딸과 함께 조용한 삶을 추구하고 있었으나 그의 상사의 딸이 인신매매 조직에 의해 납치되면서,...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/i54YydkbbYeaGTAX4W4MCa5z0ap.jpg',
+    size_mb: 4542,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '70',
+    kind: 'movie',
+    title: '해리 포터와 마법사의 돌',
+    summary: '해리 포터는 위압적인 버논 숙부와 냉담한 이모 페투니아, 욕심 많고 버릇없는 사촌 더즐리 밑에서 갖은 구박을 견디며 계단 밑 벽장에서 생활한다. 이모네 식구들 역시 해리와의 동거가...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/unEtC8uWn2lcQLnwKG9PZJX0h0c.jpg',
+    size_mb: 4709,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '71',
+    kind: 'movie',
+    title: '판타지 축구가 인생을 망쳤다',
+    summary: '결혼식 날 사라져 버린 판타지 축구 리그의 한 멤버. 경찰 앞에 불려 간 오합지졸 친구들은 난장판이 된 총각 파티가 열리기까지 있었던 일들을 털어놓는다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/dMQz9wo5z7hkYjt4QllKEnufd2A.jpg',
+    size_mb: 7300,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '72',
+    kind: 'movie',
+    title: '컨저링 2',
+    summary: '1977년 영국 엔필드. 엄마 페기와 네 남매가 살고 있는 가족의 집에 정체를 알 수 없는 존재가 나타난다. 일명 폴터가이스트 유령. 벽을 두드리는 소리, 사악한 목소리, 유령은 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/RTmoz2DYYOPDnTKGqkJDWKdcd6.jpg',
+    size_mb: 3797,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '73',
+    kind: 'movie',
+    title: '슈퍼배드 4',
+    summary: '슈트-업 하고 악당 전담 처리반 AVL이 된 에이전트 미니언즈와 미니언즈 만큼 귀여운 그루 주니어가 태어나면서 더욱 완벽해진 그루 패밀리. 이들 앞에 과거 그루의 고등학교 동창이자...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/vZmCFVff9JySHTUp9zbYUIAcxzc.jpg',
+    size_mb: 6431,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '74',
+    kind: 'movie',
+    title: '씨너스: 죄인들',
+    summary: '1932년, 시카고 갱단의 생활을 정리하고 고향 미시시피로 돌아온 쌍둥이 형제 스모크와 스택은 큰돈을 벌기 위해 술집 주크 조인트를 운영하기로 한다. 화려한 오프닝 파티가 열리는 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/5Tj7729s3MLmzNnAzaHSCWtzj5o.jpg',
+    size_mb: 4652,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '75',
+    kind: 'drama',
+    title: '웬즈데이',
+    summary: '똑똑함은 기본, 비꼬는 것에도 도가 튼 웬즈데이 아담스. 암울함을 풍기는 그녀가 네버모어 아카데미에서 얽히고설킨 미스터리를 파헤치기 시작한다. 새 친구도 사귀고, 앙숙도 만들며....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/2mKLgFJ7eacZcB3fazrU8O4rkCO.jpg',
+    size_mb: 12271,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '76',
+    kind: 'drama',
+    title: '에이리언: 어스',
+    summary: '공상과학 공포 시리즈 《에이리언: 어스》에서는 신비한 우주선이 지구에 불시착한 뒤 젊은 여자와 오합지졸 전술부대가 운명적인 발견을 하며 이 행성의 가장 큰 위협과 마주하게 된다. ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/xZTP6fWXjHH0qy4n6iBtEdNsBkn.jpg',
+    size_mb: 14566,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '77',
+    kind: 'drama',
+    title: '내가 예뻐진 그 여름',
+    summary: '매년 여름, 벨리와 가족들은 커즌즈에 있는 피셔스 가족의 해변 별장으로 향한다. 매년 똑같던 여름은 벨리가 16세가 되던 해에 달라진다. 관계가 시험대에 오르고, 고통스러운 진실이...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/9yNgQH0hTsKyJv2HF1ZCVIBML7e.jpg',
+    size_mb: 12468,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '78',
+    kind: 'drama',
+    title: '더 루키',
+    summary: '이혼 후 은행 강도를 당한 일을 계기로 LAPD에 지원한 40세의 최고령 신입을 중심으로 펼쳐지는 이야기...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/uyuCMmAxNL3z3fyW4xzefT886Yu.jpg',
+    size_mb: 18562,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '79',
+    kind: 'drama',
+    title: '덱스터',
+    summary: '2006년 10월 Showtime에서 방영을 시작한 심리 스릴러. 미국 마이에미 메트로 경찰서의 젊은 법의학자이자 마이애미에서 제일가는 혈흔분석가인 덱스터는, 사실 어릴때 겪은 참...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/q8dWfc4JwQuv3HayIZeO84jAXED.jpg',
+    size_mb: 17453,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '80',
+    kind: 'drama',
+    title: '터미널 리스트: 다크 울프',
+    summary: '터미널 리스트 이야기가 있기 몇 년 전, 해군 특수부대원 벤 에드워즈 와 레이프 헤이스팅스 는 CIA 소속 작전 중 국제적 첩보 음모에 휘말린다. 하지만 상처 하나 없이 \'비밀 작...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/3zgINFxHjAoaMw160pJAwqVelrg.jpg',
+    size_mb: 14893,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '81',
+    kind: 'drama',
+    title: '수퍼내추럴',
+    summary: '어린 시절, 샘과 딘은 정체를 알 수 없는 악마의 힘의 의해 어머니를 잃는다. 그로 인해, 그들의 아버지는 자식들을 헌터로 키우며, 미국 각지에 흩어져 있는 초자연적인 악과 괴물들...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/dpkz4yiXoaYvYP2WoRP09UmrAh6.jpg',
+    size_mb: 12863,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '82',
+    kind: 'drama',
+    title: '로 앤 오더: 성범죄전담반',
+    summary: '추악한 성범죄를 수사하는 뉴욕 경찰 성범죄전담수사반의 활약을 그린 드라마....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/34O6znqnLHAa19mZrQB0sxTDGzH.jpg',
+    size_mb: 11862,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '83',
+    kind: 'drama',
+    title: '프리즌 브레이크',
+    summary: '2005년 8월 FOX에서 방영을 시작한 스릴러. 로욜라 대학에서 건축학을 전공한 후 미들턴 재판소 건축 설계 엔지니어로 근무하던 마이클 스코필드(웬트워스 밀러)는 그의 형인 링컨...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/25CanTqZbSxroa2dqcbtRi7jaQ5.jpg',
+    size_mb: 13638,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '84',
+    kind: 'drama',
+    title: '그레이 아나토미',
+    summary: '시애틀에 있는 병원 의사들의 삶에 대한 이야기. 의사로서의 감정과 개인적인 감정에 대한 묘사가 적절히 조화를 이루어 그려진다. 인턴이지만 결국 레지던트가 되는 메러디스 그레이는 시...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/lCUvpSvjAPU82HvJ8XfR74Chv5r.jpg',
+    size_mb: 17152,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '85',
+    kind: 'drama',
+    title: '왕좌의 게임',
+    summary: '2011년 4월 HBO에서 방영을 시작한 판타지물. 조지 R.R. 마틴의 얼음과 불의 노래를 원작으로 한다. 웨스테로스 대륙의 7개의 국가와 하위 몇 개의 국가들로 구성된 연맹 국...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/zmK5G0JdkL637VbaVPYFeEQ52qi.jpg',
+    size_mb: 12561,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '86',
+    kind: 'drama',
+    title: '피스메이커',
+    summary: '평화를 위해서라면 물불 안 가리는 괴팍한 안티히어로 피스메이커. 인류의 운명이 달린 프로젝트 버터플라이에 합류한 그가 은밀한 작전을 펼치며 슈퍼히어로와 슈퍼빌런 그 사이 어딘가에서...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/gGxpw5SiHbM1vqcQzcaUClqrYVV.jpg',
+    size_mb: 19794,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '87',
+    kind: 'drama',
+    title: '브레이킹 배드',
+    summary: '2008년 1월 AMC에서 방영을 시작한 범죄 스릴러. Breaking Bad는 막가기를 뜻하는 미국 남부 지방의 속어이다. 한때 노벨화학상까지 바라 볼 정도로 뛰어난 과학자였던 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/ztkUQFLlC19CCMYHW9o1zWhJRNq.jpg',
+    size_mb: 15356,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '88',
+    kind: 'drama',
+    title: '오징어 게임',
+    summary: '빚에 쫓기는 수백 명의 사람들이 서바이벌 게임에 뛰어든다. 거액의 상금으로 새로운 삶을 시작하기 위해. 하지만 모두 승자가 될 순 없는 법. 탈락하는 이들은 치명적인 결과를 각오해...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/yACIAqAkSLkX4coHafpyLWAtQjw.jpg',
+    size_mb: 15543,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '89',
+    kind: 'drama',
+    title: 'NCIS',
+    summary: 'NCIS는 미국의 수사드라마 시리즈로 미해군과 해병대 관련 범죄수사를 담당하는 가상의 해군범죄수사대에 관한 드라마....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/mBcu8d6x6zB1el3MPNl7cZQEQ31.jpg',
+    size_mb: 15919,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '90',
+    kind: 'drama',
+    title: '\'위대한 전사\' - Chief of War',
+    summary: '하와이 제도의 네 왕국이 전쟁으로 분열된 가운데, 맹렬한 전사인 카이아나가 민족의 존재를 위협하며 해안으로 다가오는 적에 맞서 민족을 하나로 통합하는 역사적 사명에 착수한다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/xBj3dJIPKsOvqk43vdvlgO4mt4M.jpg',
+    size_mb: 14042,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '91',
+    kind: 'drama',
+    title: '미라큘러스 레이디버그',
+    summary: '프랑스 파리를 배경으로, 백인 아버지와 중국인 어머니 사이에서 태어난 중국계 프랑스인 소녀, 마리네트 청이 ‘레이디버그’로 변신해 악당으로부터 파리를 지키는 내용이다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/2StXCVS3mm09HwRBWsee3QCz3TM.jpg',
+    size_mb: 14414,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '92',
+    kind: 'drama',
+    title: '쉐임리스',
+    summary: '미국 시카고 후미진 마을에서 힘겹게 살고 있는 싱글 대디 프랭크와 총명하고 독립적인 그의 여섯 자녀들의 리얼한 이야기...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/9ZTivNsXHQWVq578CIsvsM5zd08.jpg',
+    size_mb: 10503,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '93',
+    kind: 'drama',
+    title: '로 앤 오더',
+    summary: '추악한 성범죄자를 쫓아 사건을 해결하는 특별수사단의 통쾌한 활약을 그린 수사시리즈...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/6vFL8S6Cci8s7SHWXz60xOisGBC.jpg',
+    size_mb: 16315,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '94',
+    kind: 'drama',
+    title: '어느 날 월터 형제들과 살게 됐다',
+    summary: '비극적인 사건으로 삶의 위기를 만난 10대 소녀. 작은 시골 마을에서 후견인의 대가족과 함께 생활하면서 사랑과 희망, 우정에 관해 새로운 깨달음을 얻는다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/eism6aN11LXaV3wpcuvf82wwcMM.jpg',
+    size_mb: 11957,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '95',
+    kind: 'drama',
+    title: '크리미널 마인드',
+    summary: 'FBI 프로파일러로 구성된 정예 팀이 미국에서 가장 뒤틀린 범죄자들의 심리를 분석하고, 범죄를 또 저지르기 전에 다음 수를 예측한다. 팀원들은 함께 성장하며, 이 행동 분석팀은 전...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/A5hvLZpYcpT2GFA3j8LtI6eINFr.jpg',
+    size_mb: 10605,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '96',
+    kind: 'drama',
+    title: '하우스',
+    summary: '2004년 11월 FOX에서 방영을 시작한 미스터리 의학 시리즈. 프린스턴 플레인즈보로 대학병원의 진단의학과 과장인 그레고리 하우스는 환자들을 성심성의껏 돌보는 데는 영 꽝인 의사...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/3Cz7ySOQJmqiuTdrc6CY0r65yDI.jpg',
+    size_mb: 16910,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '97',
+    kind: 'drama',
+    title: '진흙탕에서',
+    summary: '교도소로 이송되던 중 치명적인 사고를 겪은 5명의 여성 수감자들. 극한의 순간을 함께 넘긴 후 끈끈한 사이가 되지만, 무자비한 교도소 안의 부패와 세력 다툼이 그들을 위협한다....',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/cf3EFcFmtjKrUFdZmouPngCFHVg.jpg',
+    size_mb: 11133,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '98',
+    kind: 'drama',
+    title: '덱스터: 리저렉션',
+    summary: '덱스터 모건은 혼수상태에서 깨어나 아들 해리슨이 흔적도 없이 사라졌다는 사실을 알게 된다. 아들에게 자신이 어떤 상처를 주었는지 깨달은 덱스터는 모든 것을 바로잡기 위해 뉴욕으로 ...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/hIawSocuwqgNeRf3JuKuxgMHmSC.jpg',
+    size_mb: 11785,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '99',
+    kind: 'drama',
+    title: '괴수 8호',
+    summary: '일상적으로 괴수가 사람들을 위협하는 세계. 괴수를 토벌하는 「일본 방위대」 입대를 지망하던 히비노 카프카는, 언제부턴가 그 꿈을 포기하고 괴수 전문 청소업자로서 일하고 있었다. 「...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/zdJb0un6xmJF0coHgCd7AwjEhsT.jpg',
+    size_mb: 11432,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  },
+  {
+    id: '100',
+    kind: 'drama',
+    title: '패밀리 가이',
+    summary: '로드 아일랜드의 쿼호그라는 도시에서 살아가는 가장 피터, 아내 로이스, 장녀 메그, 차남 크리스, 막내 스튜이, 개 브라이언으로 이루어진 그리핀 가족과 그 주변인들의 일상을 다루고...',
+    thumbnail_url: 'https://image.tmdb.org/t/p/w500/1pbtcqNDKeWErfsDQo82pTPXQjT.jpg',
+    size_mb: 10865,
+    is_active: true,
+    created_at: '2025-09-04T21:25:24.292Z'
+  }
+];
+
+📊 총 159개의 실제 TMDb 데이터가 준비되었습니다!
