@@ -420,6 +420,55 @@ export async function getContentsByIds(ids: string[]): Promise<Content[]> {
   }
 }
 
+// DB에 콘텐츠 추가 (중복 방지)
+export async function addContentToDb(content: Partial<Content>): Promise<Content> {
+  try {
+    if (!isSupabaseConnected) {
+      // Mock 모드에서는 간단한 ID 생성
+      const mockContent: Content = {
+        id: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        kind: content.kind || 'movie',
+        title: content.title || 'Unknown Title',
+        summary: content.summary || 'No description available',
+        thumbnail_url: content.thumbnail_url || '',
+        size_mb: content.size_mb || Math.floor(Math.random() * (500 - 50 + 1)) + 50,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        ...content
+      };
+      return mockContent;
+    }
+
+    // 고유 키 결정 (tmdb_id 또는 spotify_id 기반)
+    const upsertData = {
+      ...content,
+      size_mb: content.size_mb || Math.floor(Math.random() * (500 - 50 + 1)) + 50,
+      is_active: true,
+      updated_at: new Date().toISOString()
+    };
+
+    // Upsert 실행 (중복 시 업데이트)
+    const { data, error } = await supabaseAdmin
+      .from('contents')
+      .upsert(upsertData, {
+        onConflict: content.tmdb_id ? 'tmdb_id' : 'id', // tmdb_id가 있으면 그걸 기준으로, 없으면 id 기준
+        ignoreDuplicates: false
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding content to DB:', error);
+      throw new Error('콘텐츠를 데이터베이스에 추가하는데 실패했습니다.');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('addContentToDb error:', error);
+    throw new Error('콘텐츠를 데이터베이스에 추가하는데 실패했습니다.');
+  }
+}
+
 export async function getContentStats() {
   try {
     const { data, error } = await supabaseAdmin
