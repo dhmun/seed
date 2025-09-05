@@ -5,7 +5,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 콘텐츠 테이블 (TMDB 메타데이터 포함)
 CREATE TABLE contents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id TEXT PRIMARY KEY,
     kind TEXT NOT NULL CHECK (kind IN ('movie', 'drama', 'show', 'kpop', 'doc')),
     title TEXT NOT NULL,
     original_title TEXT, -- TMDB 원제목
@@ -41,7 +41,7 @@ CREATE TABLE packs (
 -- 미디어팩-콘텐츠 관계 테이블
 CREATE TABLE pack_items (
     pack_id UUID REFERENCES packs(id) ON DELETE CASCADE,
-    content_id UUID REFERENCES contents(id) ON DELETE CASCADE,
+    content_id TEXT REFERENCES contents(id) ON DELETE CASCADE,
     PRIMARY KEY (pack_id, content_id)
 );
 

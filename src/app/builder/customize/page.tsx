@@ -77,11 +77,6 @@ export default function Customize() {
           }
         }
 
-        // Spotify 트랙 로딩
-        if (selectedSpotifyTrackIds.length > 0) {
-          const spotifyTracks = await getSpotifyTracksByIds(selectedSpotifyTrackIds);
-          setSelectedSpotifyTracks(spotifyTracks);
-        }
       } catch (error) {
         toast.error('선택된 콘텐츠를 불러오는데 실패했습니다.');
         console.error('Error loading selected contents:', error);
@@ -92,6 +87,18 @@ export default function Customize() {
 
     loadSelectedContents();
   }, []);
+
+  // 음악 ID 상태가 변경될 때마다 정보를 가져오는 useEffect
+  useEffect(() => {
+    if (selectedSpotifyTrackIds.length > 0) {
+      getSpotifyTracksByIds(selectedSpotifyTrackIds)
+        .then(setSelectedSpotifyTracks)
+        .catch(error => {
+          toast.error('선택한 음악 정보를 불러오는 데 실패했습니다.');
+          console.error('Error loading spotify tracks:', error);
+        });
+    }
+  }, [selectedSpotifyTrackIds]);
 
   // 실시간 검증
   const packNameError = packName.length > 20 ? '20자 이하로 입력해주세요.' : '';
@@ -144,7 +151,7 @@ export default function Customize() {
       setSubmitting(true);
       
       try {
-        const { slug, serial } = await createPack({
+        const { slug, serial, allContentIds } = await createPack({
           name: packName,
           message: message,
           selectedContentIds: selectedContentIds,
@@ -157,7 +164,7 @@ export default function Customize() {
           serial,
           name: packName,
           message: message,
-          selectedContentIds: selectedContentIds
+          selectedContentIds: allContentIds
         };
 
         localStorage.setItem('packResult', JSON.stringify(packResult));
