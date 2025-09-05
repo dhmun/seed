@@ -13,7 +13,7 @@ export async function getSpotifyTracksByIds(ids: string[]): Promise<SpotifyTrack
 
     const { data, error } = await supabaseAdmin
       .from('spotify_tracks')
-      .select('*')
+      .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date,created_at')
       .in('id', ids);
 
     if (error) {
@@ -36,8 +36,8 @@ export async function getAllSpotifyTracks(limit: number = 100): Promise<SpotifyT
 
     const { data, error } = await supabaseAdmin
       .from('spotify_tracks')
-      .select('*')
-      .order('popularity', { ascending: false })
+      .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date,created_at')
+      .order('popularity', { ascending: false, nullsFirst: false })
       .limit(limit);
 
     if (error) {

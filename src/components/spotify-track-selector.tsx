@@ -49,8 +49,8 @@ export default function SpotifyTrackSelector({
       try {
         const { data, error } = await supabase
           .from('spotify_tracks')
-          .select('*')
-          .order('popularity', { ascending: false })
+          .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date')
+          .order('popularity', { ascending: false, nullsFirst: false })
           .limit(20);
         
         if (error) throw error;
@@ -67,9 +67,9 @@ export default function SpotifyTrackSelector({
       // 1. 먼저 기존 데이터베이스에서 검색
       const { data: existingTracks, error: searchError } = await supabase
         .from('spotify_tracks')
-        .select('*')
+        .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date')
         .or(`name.ilike.%${searchQuery}%,artist_names.cs.{${searchQuery}}`)
-        .order('popularity', { ascending: false })
+        .order('popularity', { ascending: false, nullsFirst: false })
         .limit(20);
 
       if (searchError) throw searchError;
@@ -92,9 +92,9 @@ export default function SpotifyTrackSelector({
       // 3. 새로 동기화된 트랙 가져오기
       const { data: newTracks, error: newTracksError } = await supabase
         .from('spotify_tracks')
-        .select('*')
+        .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date')
         .or(`name.ilike.%${searchQuery}%,artist_names.cs.{${searchQuery}}`)
-        .order('popularity', { ascending: false })
+        .order('popularity', { ascending: false, nullsFirst: false })
         .limit(20);
       
       if (newTracksError) throw newTracksError;
