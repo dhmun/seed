@@ -1,16 +1,16 @@
 "use client";
 
 import TopNav from "@/components/nav/top-nav";
-import HeroSlider from "@/components/hero/hero-slider";
+import AboutHero from "@/components/about/about-hero";
 
-export default function Home() {
+export default function About() {
   return (
     <main className="h-screen bg-[#141414] text-white overflow-hidden">
       {/* Fixed Navigation */}
       <TopNav />
 
-      {/* Hero Slider Only */}
-      <HeroSlider />
+      {/* About Hero Section */}
+      <AboutHero />
     </main>
   );
 }

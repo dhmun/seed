@@ -33,10 +33,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className="scroll-smooth" data-scroll-behavior="smooth">
-      <body className="font-sans antialiased">
-        <div className="min-h-screen bg-gradient-to-br from-warm-ivory via-background to-warm-beige">
-          {children}
-        </div>
+      <body className="font-sans antialiased" suppressHydrationWarning={true}>
+        {children}
         <Toaster 
           position="top-center"
           toastOptions={{

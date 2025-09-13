@@ -118,16 +118,13 @@ export async function getCachedContents(filters: {
     let total = 0;
 
     if (!isSupabaseConnected) {
-      // Mock 데이터 사용 시 필터링 로직
-      const mockContents = await import('@/server/actions/contents');
-      let filtered = (await mockContents.listContents(kind)).filter(c => c.is_active);
+      // SQLite 로컬 데이터베이스 사용
+      const sqliteContents = await import('@/server/actions/sqlite-contents');
+      let filtered = await sqliteContents.listContents(kind);
       
       if (search) {
-        const searchLower = search.toLowerCase();
-        filtered = filtered.filter(c => 
-          c.title.toLowerCase().includes(searchLower) ||
-          c.summary.toLowerCase().includes(searchLower)
-        );
+        // SQLite에서 검색 기능 사용
+        filtered = await sqliteContents.searchContents(search, kind);
       }
 
       total = filtered.length;
@@ -288,17 +285,17 @@ export async function getCachedContentStats() {
 
   try {
     if (!isSupabaseConnected) {
-      // Mock 데이터 통계
-      const mockContents = await import('@/server/actions/contents');
-      const contents = await mockContents.listContents();
+      // SQLite 데이터베이스 통계
+      const sqliteContents = await import('@/server/actions/sqlite-contents');
+      const sqliteStats = await sqliteContents.getContentStats();
       
       const stats = {
-        total: contents.length,
-        byKind: contents.reduce((acc: Record<string, number>, content) => {
-          acc[content.kind] = (acc[content.kind] || 0) + 1;
+        total: sqliteStats.total.count,
+        byKind: sqliteStats.by_kind.reduce((acc: Record<string, number>, item) => {
+          acc[item.kind] = item.count;
           return acc;
         }, {}),
-        byGenre: {}, // Mock에서는 장르 정보가 없음
+        byGenre: {}, // SQLite에서는 장르 통계는 추후 구현
         avgRating: 0,
         totalVotes: 0
       };

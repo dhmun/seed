@@ -1,0 +1,115 @@
+div.fy-item>a {
+  text-decoration: none;
+}
+
+.watcha_com, .www_netflix_com, .www_wavve_com, .www_disneyplus_com, .www_tving_com, .uflix_co_kr {
+  position: absolute;
+  z-index: 999;
+}
+
+.watcha_com {
+  right: 4%;
+}
+
+li[fy-item]>.watcha_com {
+  margin-left: 64px;
+  margin-top: -60px;
+  font-size: 80%;
+}
+
+.www_wavve_com>a {
+  display: inline !important;
+}
+
+.www_disneyplus_com {
+  margin-left: 10px;
+  margin-top: 10px;
+}
+
+.www_tving_com {
+  right: 1%;
+  top: 2%;
+}
+
+.www_coupangplay_com {
+  display: flex;
+  position: relative;
+  z-index: 999;
+  top: 1.25rem;
+}
+
+[class^="SearchTopTrending_topTrendingContainer__"] .www_coupangplay_com {
+  position: absolute;
+  top: 0.25rem;
+}
+
+.fy-edit, .fy-external-site, .fy-imdb-rating.over-na {
+  color: white;
+  text-shadow: -1px -1px 0 gray, 1px -1px 0 gray, -1px 1px 0 gray, 1px 1px 0 gray;
+}
+
+.fy-edit {
+  font-size: 60%;
+  text-decoration: underline;
+}
+
+.fy-edit:hover {
+  font-size: 120%;
+}
+
+
+.fy-imdb-rating {
+  color: black;
+}
+
+/* from https://3oneseven.com/rating-system-movies/ */
+.fy-imdb-rating.over-9 {
+  background-color: #01cc34;
+}
+
+.fy-imdb-rating.over-8 {
+  background-color: #99ff32;
+}
+
+.fy-imdb-rating.over-7 {
+  background-color: #ccff34;
+}
+
+.fy-imdb-rating.over-6 {
+  background-color: #ccff66;
+}
+
+.fy-imdb-rating.over-5 {
+  background-color: #ffff67;
+}
+
+.fy-imdb-rating.over-4 {
+  background-color: #ffcc00;
+}
+
+.fy-imdb-rating.over-3 {
+  background-color: #ff9934;
+}
+
+.fy-imdb-rating.over-2 {
+  background-color: #ff6634;
+}
+
+.fy-imdb-rating.over-1 {
+  background-color: #ff3334;
+}
+
+.fy-imdb-rating.over-0 {
+  background-color: #cd3301;
+}
+
+.fy-imdb-rating.over-na {
+  background-color: inherit;
+}
+
+
+/* not available yet */
+.fy-imdb-my-rating {
+  color: inherit;  /* todo+++ */
+  font-weight: bold;
+}

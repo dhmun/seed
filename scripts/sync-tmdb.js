@@ -6,7 +6,8 @@ const { createClient } = require('@supabase/supabase-js');
 const fetch = require('node-fetch');
 
 // .env.local 파일의 환경 변수를 로드합니다.
-require('dotenv').config({ path: '.env.local' });
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env.local') });
 
 // --- 설정 영역 ---
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -15,7 +16,7 @@ const TMDB_ACCESS_TOKEN = process.env.TMDB_API_ACCESS_TOKEN;
 
 const TMDB_API_BASE_URL = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500'; // w500은 이미지 크기
-const PAGES_TO_FETCH = 25; // 가져올 페이지 수 (1페이지 당 20개, 25페이지 = 500개)
+const PAGES_TO_FETCH = 50; // 가져올 페이지 수 (1페이지 당 20개, 50페이지 = 1000개)
 const TMDB_BACKDROP_BASE_URL = 'https://image.tmdb.org/t/p/w1280'; // 배경 이미지용
 
 // Supabase 클라이언트 초기화 (서비스 키 사용)
@@ -32,7 +33,8 @@ if (SUPABASE_URL && SUPABASE_SERVICE_KEY) {
  */
 async function fetchMultiplePages(type) {
   let allResults = [];
-  console.log(`📡 ${type === 'movie' ? '영화' : 'TV'} 데이터 가져오는 중 (총 ${PAGES_TO_FETCH} 페이지)...`);
+  console.log(`📡 ${type === 'movie' ? '영화' : 'TV'} 데이터 가져오는 중 (총 ${PAGES_TO_FETCH} 페이지)...
+`);
   
   for (let page = 1; page <= PAGES_TO_FETCH; page++) {
     const url = `${TMDB_API_BASE_URL}/${type}/popular?language=ko-KR&page=${page}`;
@@ -124,8 +126,8 @@ function generateMockData(allContents) {
     console.log(`  {
     id: '${content.id}',
     kind: '${content.kind}',
-    title: '${content.title.replace(/'/g, "'\'").replace(/"/g, '\"')}',
-    summary: '${content.summary.replace(/'/g, "'\'").replace(/"/g, '\"')}',
+    title: '${content.title.replace(/'/g, "'\''").replace(/"/g, '\"')}',
+    summary: '${content.summary.replace(/'/g, "'\''").replace(/"/g, '\"')}',
     thumbnail_url: '${content.thumbnail_url}',
     size_mb: ${content.size_mb},
     is_active: true,
@@ -151,20 +153,20 @@ async function main() {
   }
 
   try {
-    // 1. 인기 영화 100개 가져오기 (5페이지)
-    const movies = await fetchMultiplePages('movie');
+    // 1. 인기 영화 가져오기 (주석 처리)
+    // const movies = await fetchMultiplePages('movie');
     
-    // 2. 인기 드라마 100개 가져오기 (5페이지)  
+    // 2. 인기 드라마 1000개 가져오기 (50페이지)
     const dramas = await fetchMultiplePages('tv');
     
-    console.log(`\n🎬 영화 ${movies.length}개, 📺 드라마 ${dramas.length}개 수집 완료`);
+    console.log(`\n📺 드라마 ${dramas.length}개 수집 완료`);
     
     // 3. 우리 DB 스키마에 맞게 데이터 변환
     console.log('\n🔄 데이터 변환 중...');
-    const transformedMovies = movies.map(movie => transformData(movie, 'movie', 'movie')).filter(Boolean); // null 데이터 제거
+    // const transformedMovies = movies.map(movie => transformData(movie, 'movie', 'movie')).filter(Boolean); // null 데이터 제거
     const transformedDramas = dramas.map(drama => transformData(drama, 'drama', 'tv')).filter(Boolean);
 
-    const allContents = [...transformedMovies, ...transformedDramas];
+    const allContents = [...transformedDramas];
 
     console.log(`\n✅ 총 ${allContents.length}개의 유효한 콘텐츠 변환 완료`);
 
