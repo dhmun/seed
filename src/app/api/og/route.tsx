@@ -10,23 +10,60 @@ export async function GET(request: NextRequest) {
     const slug = searchParams.get('slug');
 
     if (!slug) {
-      return new Response('Missing slug parameter', { status: 400 });
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing slug parameter' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
     // 미디어팩 데이터 가져오기
-    const pack = await getPackBySlug(slug);
-
-    if (!pack) {
-      return new Response('Pack not found', { status: 404 });
+    let pack;
+    try {
+      pack = await getPackBySlug(slug);
+    } catch (dbError) {
+      console.error('Database error in OG generation:', dbError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Database error occurred' }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    // 썸네일 URL들 (최대 4개)
-    const thumbnails = pack.contents.slice(0, 4).map(content => content.thumbnail_url);
+    if (!pack) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Pack not found' }),
+        { 
+          status: 404,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    // 썸네일 URL들 (최대 4개) - 안전한 접근
+    const thumbnails = (pack.contents || []).slice(0, 4).map(content => content.thumbnail_url).filter(Boolean);
 
     // Gowun Dodum 폰트 로드
-    const fontData = await fetch(
-      new URL('https://fonts.gstatic.com/s/gowundodum/v13/3Jn5SD_-ynaxmxnEfVHPIGXeSvqOXuE.woff2', import.meta.url),
-    ).then((res) => res.arrayBuffer());
+    let fontData;
+    try {
+      const fontResponse = await fetch(
+        new URL('https://fonts.gstatic.com/s/gowundodum/v13/3Jn5SD_-ynaxmxnEfVHPIGXeSvqOXuE.woff2', import.meta.url)
+      );
+      
+      if (!fontResponse.ok) {
+        throw new Error(`Font fetch failed: ${fontResponse.status}`);
+      }
+      
+      fontData = await fontResponse.arrayBuffer();
+    } catch (fontError) {
+      console.error('Font loading error:', fontError);
+      // 폰트 로딩 실패시 기본 폰트로 진행
+      fontData = null;
+    }
 
     return new ImageResponse(
       (
@@ -223,19 +260,27 @@ export async function GET(request: NextRequest) {
       {
         width: 1200,
         height: 630,
-        fonts: [
+        fonts: fontData ? [
           {
             name: 'Gowun Dodum',
             data: fontData,
             style: 'normal',
           },
-        ],
+        ] : undefined,
       },
     );
   } catch (e) {
     console.error('OG Image generation error:', e);
-    return new Response(`Failed to generate OG image: ${e}`, {
-      status: 500,
-    });
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Failed to generate OG image',
+        details: e instanceof Error ? e.message : String(e)
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getQuery, allQuery } from '@/lib/sqlite-db';
+import { supabaseAdmin, isSupabaseConnected } from '@/lib/supabase';
 
 export async function GET() {
   try {
@@ -18,17 +18,30 @@ export async function GET() {
     const baseContentSelections = 1234 + (daysSinceEpoch % 200);
     const contentSelections = baseContentSelections + Math.floor(hourOfDay / 1.5);
 
-    // 실제 SQLite 데이터 조회
-    const [packsResult, statsResult] = await Promise.all([
-      // 총 미디어팩 생성 수 (참여자 수)
-      getQuery<{ value: number }>('SELECT value FROM counters WHERE key = ?', ['pack_serial']),
-      
-      // 추가 통계 (최근 1000개 팩)
-      allQuery<{ id: string; created_at: string }>('SELECT id, created_at FROM packs ORDER BY created_at DESC LIMIT 1000')
-    ]);
+    // Supabase 데이터 조회 (연결되어 있을 경우)
+    let totalPacks = 0;
+    let recentPacks: any[] = [];
+    
+    if (isSupabaseConnected) {
+      try {
+        // 총 미디어팩 생성 수
+        const { data: packsCount } = await supabaseAdmin()
+          .from('packs')
+          .select('*', { count: 'exact', head: true });
+        
+        // 최근 팩 데이터
+        const { data: packsData } = await supabaseAdmin()
+          .from('packs')
+          .select('id, created_at')
+          .order('created_at', { ascending: false })
+          .limit(1000);
 
-    const totalPacks = packsResult?.value || 0;
-    const recentPacks = statsResult || [];
+        totalPacks = packsCount?.length || 0;
+        recentPacks = packsData || [];
+      } catch (supabaseError) {
+        console.log('Supabase stats query failed, using fallback data');
+      }
+    }
     
     // 공유 횟수는 미디어팩 수의 2-4배로 추정 (실제로는 별도 테이블에서 추적)
     const estimatedShares = Math.floor(totalPacks * (2.5 + Math.random()));

@@ -67,7 +67,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
     }
 
     // 트랜잭션 시작 - 미디어팩 시리얼 번호 증가
-    const { data: serialData, error: serialError } = await supabaseAdmin
+    const { data: serialData, error: serialError } = await supabaseAdmin()
       .rpc('increment_counter', { counter_key: 'pack_serial' });
 
     if (serialError) {
@@ -79,7 +79,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
     const shareSlug = nanoid(10); // 10자리 고유 ID
 
     // Pack 생성
-    const { data: pack, error: packError } = await supabaseAdmin
+    const { data: pack, error: packError } = await supabaseAdmin()
       .from('packs')
       .insert({
         name: data.name,
@@ -128,7 +128,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
         
         // 3. 변환된 음악 정보를 'contents' 테이블에 저장 (upsert 사용)
         if (spotifyContentsToUpsert.length > 0) {
-          const { data: upsertedData, error: upsertError } = await supabaseAdmin
+          const { data: upsertedData, error: upsertError } = await supabaseAdmin()
             .from('contents')
             .upsert(spotifyContentsToUpsert, { onConflict: 'id' })
             .select('id');
@@ -153,7 +153,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
       content_id: contentId,
     }));
 
-    const { error: itemsError } = await supabaseAdmin
+    const { error: itemsError } = await supabaseAdmin()
       .from('pack_items')
       .insert(packItems);
 
@@ -183,7 +183,7 @@ export async function getPackBySlug(slug: string): Promise<PackWithContents | nu
     }
 
     // Pack 정보 가져오기
-    const { data: pack, error: packError } = await supabaseAdmin
+    const { data: pack, error: packError } = await supabaseAdmin()
       .from('packs')
       .select('*')
       .eq('share_slug', slug)
@@ -195,7 +195,7 @@ export async function getPackBySlug(slug: string): Promise<PackWithContents | nu
     }
 
     // Pack에 포함된 콘텐츠 가져오기
-    const { data: packItems, error: itemsError } = await supabaseAdmin
+    const { data: packItems, error: itemsError } = await supabaseAdmin()
       .from('pack_items')
       .select(`
         content_id,
@@ -219,7 +219,7 @@ export async function getPackBySlug(slug: string): Promise<PackWithContents | nu
 
 export async function getPackStats() {
   try {
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin()
       .from('counters')
       .select('value')
       .eq('key', 'pack_serial')
@@ -239,7 +239,7 @@ export async function getPackStats() {
 
 export async function updatePackOgImage(slug: string, ogImageUrl: string): Promise<boolean> {
   try {
-    const { error } = await supabaseAdmin
+    const { error } = await supabaseAdmin()
       .from('packs')
       .update({ og_image_url: ogImageUrl })
       .eq('share_slug', slug);
