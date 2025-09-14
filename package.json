@@ -15,6 +15,7 @@
     "test:coverage": "jest --coverage",
     "sync:tmdb": "node scripts/sync-tmdb.js",
     "sync:spotify": "npx tsx scripts/sync-popular-playlists.ts",
+    "verify:supabase": "npx tsx scripts/verify-supabase.ts",
     "deploy:vercel": "node deploy-scripts/deploy-vercel.js",
     "deploy:netlify": "node deploy-scripts/deploy-netlify.js",
     "deploy:all": "npm run deploy:vercel && npm run deploy:netlify"
