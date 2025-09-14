@@ -67,6 +67,11 @@ function initializeTables() {
   
   const queries = [
     // contents 테이블
+    `function initializeTables() {
+  if (!_db) return;
+  
+  const queries = [
+    // contents 테이블
     `CREATE TABLE IF NOT EXISTS contents (
       id TEXT PRIMARY KEY,
       kind TEXT NOT NULL CHECK (kind IN ('movie', 'drama', 'show', 'kpop', 'doc')),
@@ -80,8 +85,75 @@ function initializeTables() {
       vote_average REAL,
       release_date TEXT,
       genre_ids TEXT,
-      popularity REAL
+      popularity REAL,
+      original_title TEXT,
+      backdrop_url TEXT,
+      tmdb_type TEXT,
+      vote_count INTEGER,
+      adult BOOLEAN,
+      original_language TEXT,
+      updated_at TEXT
     )`,
+    
+    // packs 테이블
+    `CREATE TABLE IF NOT EXISTS packs (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      message TEXT NOT NULL,
+      serial INTEGER NOT NULL,
+      share_slug TEXT NOT NULL UNIQUE,
+      og_image_url TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    // pack_items 테이블
+    `CREATE TABLE IF NOT EXISTS pack_items (
+      pack_id TEXT NOT NULL,
+      content_id TEXT NOT NULL,
+      PRIMARY KEY (pack_id, content_id),
+      FOREIGN KEY (pack_id) REFERENCES packs(id) ON DELETE CASCADE,
+      FOREIGN KEY (content_id) REFERENCES contents(id) ON DELETE CASCADE
+    )`,
+    
+    // messages 테이블
+    `CREATE TABLE IF NOT EXISTS messages (
+      id TEXT PRIMARY KEY,
+      pack_id TEXT NOT NULL,
+      body TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (pack_id) REFERENCES packs(id) ON DELETE CASCADE
+    )`,
+    
+    // counters 테이블
+    `CREATE TABLE IF NOT EXISTS counters (
+      key TEXT PRIMARY KEY,
+      value INTEGER NOT NULL DEFAULT 0
+    )`,
+    
+    // share_events 테이블 (새로 추가)
+    `CREATE TABLE IF NOT EXISTS share_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pack_slug TEXT NOT NULL,
+      platform TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`,
+    
+    // pack_views 테이블 (새로 추가)
+    `CREATE TABLE IF NOT EXISTS pack_views (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pack_slug TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`
+  ];
+  
+  queries.forEach(query => {
+    _db!.run(query, (err) => {
+      if (err) {
+        console.error('테이블 생성 실패:', err);
+      }
+    });
+  });
+}`,
     
     // packs 테이블
     `CREATE TABLE IF NOT EXISTS packs (
