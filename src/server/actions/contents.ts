@@ -371,7 +371,7 @@ export async function listContents(kind?: string): Promise<Content[]> {
       return filtered;
     }
 
-    let query = supabaseAdmin
+    let query = supabaseAdmin()()
       .from('contents')
       .select('*')
       .eq('is_active', true)

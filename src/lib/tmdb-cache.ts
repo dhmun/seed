@@ -142,7 +142,7 @@ export async function getCachedContents(filters: {
       contents = filtered.slice(offset, offset + limit);
     } else {
       // Supabase 쿼리
-      let query = supabaseAdmin
+      let query = supabaseAdmin()
         .from('contents')
         .select('*', { count: 'exact' })
         .eq('is_active', true);
@@ -304,7 +304,7 @@ export async function getCachedContentStats() {
       return stats;
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin()
       .from('contents')
       .select('kind, genre_ids, vote_average, vote_count')
       .eq('is_active', true);

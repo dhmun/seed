@@ -160,7 +160,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
     if (itemsError) {
       console.error('Error creating pack items:', itemsError);
       // 롤백을 위해 생성된 pack 삭제
-      await supabaseAdmin.from('packs').delete().eq('id', pack.id);
+      await supabaseAdmin().from('packs').delete().eq('id', pack.id);
       throw new Error('미디어팩 아이템 생성에 실패했습니다.');
     }
 
