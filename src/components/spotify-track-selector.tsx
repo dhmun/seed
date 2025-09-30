@@ -8,8 +8,6 @@ import { Search, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
 import { syncSpotifyTracks } from '@/server/actions/spotify_sync';
-import { supabase } from '@/lib/supabase';
-
 import { Database } from '@/lib/supabase'; // Import Database type
 
 type SpotifyTrackRow = Database['public']['Tables']['spotify_tracks']['Row'];

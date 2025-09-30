@@ -1,6 +1,5 @@
 'use server';
 
-import { supabaseAdmin, isSupabaseConnected } from '@/lib/supabase';
 import type { Content } from '@/lib/supabase';
 
 // 메모리 캐시 (프로덕션에서는 Redis 사용 권장)
@@ -114,70 +113,28 @@ export async function getCachedContents(filters: {
   }
 
   try {
-    let contents: Content[] = [];
-    let total = 0;
-
-    if (!isSupabaseConnected) {
-      // SQLite 로컬 데이터베이스 사용
-      const sqliteContents = await import('@/server/actions/sqlite-contents');
-      let filtered = await sqliteContents.listContents(kind);
-      
-      if (search) {
-        // SQLite에서 검색 기능 사용
-        filtered = await sqliteContents.searchContents(search, kind);
-      }
-
-      total = filtered.length;
-      
-      // 정렬
-      filtered.sort((a, b) => {
-        const aVal = getFieldValue(a, sortBy);
-        const bVal = getFieldValue(b, sortBy);
-        const comparison = compareValues(aVal, bVal);
-        return sortOrder === 'desc' ? -comparison : comparison;
-      });
-
-      // 페이징
-      const offset = (page - 1) * limit;
-      contents = filtered.slice(offset, offset + limit);
-    } else {
-      // Supabase 쿼리
-      let query = supabaseAdmin()
-        .from('contents')
-        .select('*', { count: 'exact' })
-        .eq('is_active', true);
-
-      if (kind) {
-        query = query.eq('kind', kind);
-      }
-
-      if (search) {
-        query = query.or(`title.ilike.%${search}%,summary.ilike.%${search}%`);
-      }
-
-      if (genre && genre.length > 0) {
-        query = query.overlaps('genre_ids', genre);
-      }
-
-      // 정렬
-      const orderField = sortBy === 'title' ? 'title' : sortBy;
-      query = query.order(orderField, { ascending: sortOrder === 'asc' });
-
-      // 페이징
-      const from = (page - 1) * limit;
-      const to = from + limit - 1;
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        console.error('Error fetching cached contents:', error);
-        throw new Error('콘텐츠를 불러오는데 실패했습니다.');
-      }
-
-      contents = data || [];
-      total = count || 0;
+    // SQLite 로컬 데이터베이스 사용
+    const sqliteContents = await import('@/server/actions/sqlite-contents');
+    let filtered = await sqliteContents.listContents(kind);
+    
+    if (search) {
+      // SQLite에서 검색 기능 사용
+      filtered = await sqliteContents.searchContents(search, kind);
     }
+
+    const total = filtered.length;
+    
+    // 정렬
+    filtered.sort((a, b) => {
+      const aVal = getFieldValue(a, sortBy);
+      const bVal = getFieldValue(b, sortBy);
+      const comparison = compareValues(aVal, bVal);
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+
+    // 페이징
+    const offset = (page - 1) * limit;
+    const contents = filtered.slice(offset, offset + limit);
 
     const result = {
       contents,
@@ -284,66 +241,24 @@ export async function getCachedContentStats() {
   }
 
   try {
-    if (!isSupabaseConnected) {
-      // SQLite 데이터베이스 통계
-      const sqliteContents = await import('@/server/actions/sqlite-contents');
-      const sqliteStats = await sqliteContents.getContentStats();
-      
-      const stats = {
-        total: sqliteStats.total.count,
-        byKind: sqliteStats.by_kind.reduce((acc: Record<string, number>, item) => {
-          acc[item.kind] = item.count;
-          return acc;
-        }, {}),
-        byGenre: {}, // SQLite에서는 장르 통계는 추후 구현
-        avgRating: 0,
-        totalVotes: 0
-      };
-
-      tmdbCache.set(cacheKey, stats);
-      return stats;
-    }
-
-    const { data, error } = await supabaseAdmin()
-      .from('contents')
-      .select('kind, genre_ids, vote_average, vote_count')
-      .eq('is_active', true);
-
-    if (error) {
-      console.error('Error fetching content stats:', error);
-      throw new Error('통계를 불러오는데 실패했습니다.');
-    }
-
-    const total = data.length;
-    const byKind = data.reduce((acc: Record<string, number>, content: any) => {
-      acc[content.kind] = (acc[content.kind] || 0) + 1;
-      return acc;
-    }, {});
-
-    const byGenre = data.reduce((acc: Record<number, number>, content: any) => {
-      if (content.genre_ids) {
-        content.genre_ids.forEach((genreId: number) => {
-          acc[genreId] = (acc[genreId] || 0) + 1;
-        });
-      }
-      return acc;
-    }, {});
-
-    const totalVotes = data.reduce((sum: number, content: any) => sum + (content.vote_count || 0), 0);
-    const avgRating = data.length > 0 
-      ? data.reduce((sum: number, content: any) => sum + (content.vote_average || 0), 0) / data.length 
-      : 0;
-
+    // SQLite 데이터베이스 통계
+    const sqliteContents = await import('@/server/actions/sqlite-contents');
+    const sqliteStats = await sqliteContents.getContentStats();
+    
     const stats = {
-      total,
-      byKind,
-      byGenre,
-      avgRating: Math.round(avgRating * 10) / 10,
-      totalVotes
+      total: sqliteStats.total.count,
+      byKind: sqliteStats.by_kind.reduce((acc: Record<string, number>, item) => {
+        acc[item.kind] = item.count;
+        return acc;
+      }, {}),
+      byGenre: {}, // SQLite에서는 장르 통계는 추후 구현
+      avgRating: 0,
+      totalVotes: 0
     };
 
     tmdbCache.set(cacheKey, stats);
     return stats;
+
   } catch (error) {
     console.error('getCachedContentStats error:', error);
     throw new Error('통계를 불러오는데 실패했습니다.');

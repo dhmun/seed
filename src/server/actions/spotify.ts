@@ -1,53 +1,35 @@
 'use server';
 
-import { supabaseAdmin, isSupabaseConnected } from '@/lib/supabase';
-import { Database } from '@/lib/supabase';
-
-type SpotifyTrackRow = Database['public']['Tables']['spotify_tracks']['Row'];
+export interface SpotifyTrackRow {
+  id: string;
+  name: string;
+  artist_names: string[];
+  album_name: string;
+  album_image_url?: string;
+  preview_url?: string;
+  external_url: string;
+  duration_ms: number;
+  popularity: number;
+  release_date?: string;
+  created_at: string;
+}
 
 export async function getSpotifyTracksByIds(ids: string[]): Promise<SpotifyTrackRow[]> {
   try {
-    if (!isSupabaseConnected || ids.length === 0) {
-      return [];
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('spotify_tracks')
-      .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date,created_at')
-      .in('id', ids);
-
-    if (error) {
-      console.error('Error fetching Spotify tracks by IDs:', error);
-      throw new Error('선택한 음악을 불러오는데 실패했습니다.');
-    }
-
-    return data || [];
+    // Mock 모드에서는 빈 배열 반환
+    return [];
   } catch (error) {
     console.error('getSpotifyTracksByIds error:', error);
-    throw new Error('선택한 음악을 불러오는데 실패했습니다.');
+    return [];
   }
 }
 
 export async function getAllSpotifyTracks(limit: number = 100): Promise<SpotifyTrackRow[]> {
   try {
-    if (!isSupabaseConnected) {
-      return [];
-    }
-
-    const { data, error } = await supabaseAdmin
-      .from('spotify_tracks')
-      .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date,created_at')
-      .order('popularity', { ascending: false, nullsFirst: false })
-      .limit(limit);
-
-    if (error) {
-      console.error('Error fetching all Spotify tracks:', error);
-      throw new Error('음악 목록을 불러오는데 실패했습니다.');
-    }
-
-    return data || [];
+    // Mock 모드에서는 빈 배열 반환
+    return [];
   } catch (error) {
     console.error('getAllSpotifyTracks error:', error);
-    throw new Error('음악 목록을 불러오는데 실패했습니다.');
+    return [];
   }
 }

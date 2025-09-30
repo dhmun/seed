@@ -9,6 +9,9 @@
 
 (async () => {
   try {
+    // Load environment variables from .env.local
+    require('dotenv').config({ path: '.env.local' });
+
     const { createClient } = await import('@supabase/supabase-js');
 
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

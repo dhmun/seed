@@ -1,19 +1,8 @@
 'use server';
 
-import spotifyClient, { type SpotifyTrack } from '@/utils/server/spotify-client'; // Import the default instance
-import { createClient } from '@supabase/supabase-js';
+import spotifyClient, { type SpotifyTrack } from '@/utils/server/spotify-client';
 
-// 직접 Supabase 클라이언트 생성 (TMDB 스크립트와 동일한 방식)
-function getSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Supabase credentials not configured');
-  }
-  
-  return createClient(supabaseUrl, supabaseServiceKey);
-}
+// Supabase is removed. The functions in this file are now stubs.
 
 export async function syncSpotifyTracks(query: string, limit: number = 20) {
   if (!query.trim()) {
@@ -26,32 +15,10 @@ export async function syncSpotifyTracks(query: string, limit: number = 20) {
     if (spotifyTracks.length === 0) {
       return { success: true, message: '스포티파이에서 일치하는 트랙을 찾지 못했습니다.' };
     }
-
-    const tracksToInsert = spotifyTracks.map(track => ({
-      id: track.id,
-      name: track.name,
-      artist_names: track.artists.map(artist => artist.name),
-      album_name: track.album.name,
-      album_image_url: track.album.images[0]?.url || null,
-      preview_url: track.preview_url,
-      external_url: track.external_urls.spotify,
-      duration_ms: track.duration_ms,
-      release_date: track.album.release_date || null, // null로 변환하여 날짜 오류 방지
-      popularity: track.popularity,
-    }));
-
-    const supabaseAdmin = getSupabaseClient();
-    const { data, error } = await supabaseAdmin
-      .from('spotify_tracks')
-      .upsert(tracksToInsert, { onConflict: 'id' }) // id 충돌 시 업데이트
-      .select();
-
-    if (error) {
-      console.error('Supabase upsert error:', error);
-      return { success: false, message: `Supabase 저장 중 오류 발생: ${error.message}` };
-    }
-
-    return { success: true, message: `${data?.length}개의 스포티파이 트랙이 성공적으로 동기화되었습니다.`, data };
+    
+    const message = `${spotifyTracks.length}개의 스포티파이 트랙을 찾았지만, 데이터베이스가 비활성화되어 저장하지 않았습니다.`;
+    console.log(message);
+    return { success: true, message };
 
   } catch (error: any) {
     console.error('Spotify sync failed:', error);
@@ -135,72 +102,14 @@ export async function syncPopularPlaylists() {
 
     console.log(`📀 총 ${spotifyTracks.length}개의 고유 트랙 발견`);
 
-    // 날짜 형식 처리 함수
-    const formatReleaseDate = (dateStr: string | null): string | null => {
-      if (!dateStr) return null;
-      
-      // "2005" -> "2005-01-01"
-      if (/^\d{4}$/.test(dateStr)) {
-        return `${dateStr}-01-01`;
-      }
-      
-      // "2005-03" -> "2005-03-01"  
-      if (/^\d{4}-\d{2}$/.test(dateStr)) {
-        return `${dateStr}-01`;
-      }
-      
-      // "2005-03-15" -> 그대로 유지
-      if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-        return dateStr;
-      }
-      
-      // 기타 형식은 null로
-      return null;
-    };
-
-    const tracksToInsert = spotifyTracks.map(track => ({
-      id: track.id,
-      name: track.name,
-      artist_names: track.artists.map(artist => artist.name),
-      album_name: track.album.name,
-      album_image_url: track.album.images[0]?.url || null,
-      preview_url: track.preview_url,
-      external_url: track.external_urls.spotify,
-      duration_ms: track.duration_ms,
-      release_date: formatReleaseDate(track.album.release_date), // 날짜 형식 변환
-      popularity: track.popularity,
-    }));
-
-    const supabaseAdmin = getSupabaseClient();
-    
-    // 기존 데이터 삭제 후 새 데이터 삽입 (TMDB와 동일한 방식)
-    console.log('🗑️ 기존 Spotify 트랙 데이터 삭제 중...');
-    const { error: deleteError } = await supabaseAdmin
-      .from('spotify_tracks')
-      .delete()
-      .gte('created_at', '1970-01-01'); // 모든 데이터 삭제
-
-    if (deleteError) {
-      console.error('기존 데이터 삭제 오류:', deleteError);
-      return { success: false, message: `기존 데이터 삭제 중 오류 발생: ${deleteError.message}` };
-    }
-
-    console.log('💾 새로운 트랙 데이터 삽입 중...');
-    const { data, error } = await supabaseAdmin
-      .from('spotify_tracks')
-      .insert(tracksToInsert)
-      .select();
-
-    if (error) {
-      console.error('Supabase insert error:', error);
-      return { success: false, message: `Supabase 저장 중 오류 발생: ${error.message}` };
-    }
+    const message = `✅ 성공! ${spotifyTracks.length}개의 인기 스포티파이 트랙을 찾았지만, 데이터베이스가 비활성화되어 저장하지 않았습니다.`;
+    console.log(message);
 
     return { 
       success: true, 
-      message: `✅ 성공! ${data?.length}개의 인기 스포티파이 트랙이 동기화되었습니다.`,
+      message,
       data: {
-        totalTracks: data?.length,
+        totalTracks: spotifyTracks.length,
         searches: searchQueries.length
       }
     };
