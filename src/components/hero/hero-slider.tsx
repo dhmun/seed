@@ -4,10 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Gift } from "lucide-react";
+import { Gift, Film } from "lucide-react"; // Added Film for placeholder
 import { motion, AnimatePresence } from "framer-motion";
 
-interface HeroItem {
+export interface HeroItem {
   id: string;
   title: string;
   subtitle: string;
@@ -29,35 +29,10 @@ const texts = {
   }
 };
 
-const heroItems: HeroItem[] = [
-  {
-    id: "hero-1",
-    title: "당신의 선택이 누군가에게는 세상의 전부",
-    subtitle: "한류 콘텐츠로 만드는 특별한 캠페인",
-    description: "미디어 큐레이션으로 전하는 따뜻한 마음. 나만의 미디어팩을 만들어 희망의 씨앗을 나눠보세요.",
-    thumbnailUrl: "https://picsum.photos/800/450?random=101",
-    bgUrl: "https://picsum.photos/1920/1080?random=101",
-  },
-  {
-    id: "hero-2", 
-    title: "따뜻한 이야기로 채워진 특별한 컬렉션",
-    subtitle: "콘텐츠로 만드는 희망의 미디어 팩",
-    description: "국내외 감동적인 스토리와 메시지를 담은 큐레이션.",
-    thumbnailUrl: "https://picsum.photos/800/450?random=102",
-    bgUrl: "https://picsum.photos/1920/1080?random=102",
+// NOTE: The hardcoded 'heroItems' array has been removed.
+// This component now receives its data via props from a Server Component.
 
-  },
-  {
-    id: "hero-3",
-    title: "세상을 바꾸는 작은 변화들", 
-    subtitle: "누군가에게는 세상의 전부",
-    description: "희망과 변화의 이야기들을 모은 특별한 큐레이션.",
-    thumbnailUrl: "https://picsum.photos/800/450?random=103",
-    bgUrl: "https://picsum.photos/1920/1080?random=103",
-  }
-];
-
-export default function HeroSlider({ items = heroItems }: HeroSliderProps) {
+export default function HeroSlider({ items = [] }: HeroSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -76,7 +51,7 @@ export default function HeroSlider({ items = heroItems }: HeroSliderProps) {
   }, []);
 
   const startAutoplay = useCallback(() => {
-    if (prefersReducedMotion) return; // Respect reduced motion preference
+    if (prefersReducedMotion || items.length <= 1) return; // Don't autoplay if not needed
     if (intervalRef.current) clearInterval(intervalRef.current);
     intervalRef.current = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
@@ -99,18 +74,32 @@ export default function HeroSlider({ items = heroItems }: HeroSliderProps) {
     return stopAutoplay;
   }, [isPlaying, hasFocus, startAutoplay, stopAutoplay]);
 
+  // If there are no items, render a fallback or nothing
+  if (!items || items.length === 0) {
+    return (
+      <section className="relative h-screen w-full overflow-hidden flex items-center justify-center bg-black">
+        <div className="text-center text-zinc-500">
+            <Film className="mx-auto h-12 w-12 mb-4" />
+            <h2 className="text-2xl font-semibold">콘텐츠를 불러오는 중입니다...</h2>
+            <p className="mt-2">또는 표시할 추천 콘텐츠가 없습니다.</p>
+        </div>
+      </section>
+    );
+  }
 
   const currentItem = items[currentIndex];
 
   return (
     <>
       {/* Preload first hero image for LCP optimization */}
-      <link
-        rel="preload"
-        as="image"
-        href={items[0]?.bgUrl}
-        key="hero-preload"
-      />
+      {items[0]?.bgUrl && (
+        <link
+          rel="preload"
+          as="image"
+          href={items[0].bgUrl}
+          key="hero-preload"
+        />
+      )}
       
       <section 
         ref={sectionRef}
@@ -271,9 +260,7 @@ export default function HeroSlider({ items = heroItems }: HeroSliderProps) {
 
 
         @media (prefers-reduced-motion: reduce) {
-          .hero-section *,
-          .hero-section *::before,
-          .hero-section *::after {
+          .hero-section *,.hero-section *::before,.hero-section *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
@@ -282,8 +269,7 @@ export default function HeroSlider({ items = heroItems }: HeroSliderProps) {
         }
 
         @media (max-width: 768px) {
-          .btn-primary-light,
-          .btn-ghost-dark {
+          .btn-primary-light,.btn-ghost-dark {
             font-size: 1rem;
             line-height: 1.5rem;
             padding: 1rem 1.5rem;
