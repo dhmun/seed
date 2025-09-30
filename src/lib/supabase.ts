@@ -81,6 +81,38 @@ export type Database = {
         Insert: { key: string; value: number; };
         Update: { key?: string; value?: number; };
       };
+      spotify_tracks: {
+        Row: {
+          id: string;
+          name: string;
+          artist_names: string[];
+          album_name: string;
+          album_image_url: string | null;
+          preview_url: string | null;
+          spotify_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          artist_names: string[];
+          album_name: string;
+          album_image_url?: string | null;
+          preview_url?: string | null;
+          spotify_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          artist_names?: string[];
+          album_name?: string;
+          album_image_url?: string | null;
+          preview_url?: string | null;
+          spotify_id?: string;
+          created_at?: string;
+        };
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -88,11 +120,12 @@ export type Database = {
   };
 };
 
-export type Content  = Database['public']['Tables']['contents']['Row'];
-export type Pack     = Database['public']['Tables']['packs']['Row'];
-export type PackItem = Database['public']['Tables']['pack_items']['Row'];
-export type Message  = Database['public']['Tables']['messages']['Row'];
-export type Counter  = Database['public']['Tables']['counters']['Row'];
+export type Content      = Database['public']['Tables']['contents']['Row'];
+export type Pack         = Database['public']['Tables']['packs']['Row'];
+export type PackItem     = Database['public']['Tables']['pack_items']['Row'];
+export type Message      = Database['public']['Tables']['messages']['Row'];
+export type Counter      = Database['public']['Tables']['counters']['Row'];
+export type SpotifyTrack = Database['public']['Tables']['spotify_tracks']['Row'];
 
 /** ===== Supabase 클라이언트 설정 ===== */
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!

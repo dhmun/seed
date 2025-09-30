@@ -113,13 +113,17 @@ export async function getCachedContents(filters: {
   }
 
   try {
-    // SQLite 로컬 데이터베이스 사용
-    const sqliteContents = await import('@/server/actions/sqlite-contents');
-    let filtered = await sqliteContents.listContents(kind);
-    
+    // Supabase 데이터베이스 사용
+    const { listContents } = await import('@/server/actions/contents');
+    let filtered = await listContents(kind);
+
+    // 검색 필터링 (클라이언트 사이드)
     if (search) {
-      // SQLite에서 검색 기능 사용
-      filtered = await sqliteContents.searchContents(search, kind);
+      const searchLower = search.toLowerCase();
+      filtered = filtered.filter(content =>
+        content.title.toLowerCase().includes(searchLower) ||
+        content.summary.toLowerCase().includes(searchLower)
+      );
     }
 
     const total = filtered.length;
@@ -241,17 +245,14 @@ export async function getCachedContentStats() {
   }
 
   try {
-    // SQLite 데이터베이스 통계
-    const sqliteContents = await import('@/server/actions/sqlite-contents');
-    const sqliteStats = await sqliteContents.getContentStats();
-    
+    // Supabase 데이터베이스 통계
+    const { getContentStats } = await import('@/server/actions/contents');
+    const supabaseStats = await getContentStats();
+
     const stats = {
-      total: sqliteStats.total.count,
-      byKind: sqliteStats.by_kind.reduce((acc: Record<string, number>, item) => {
-        acc[item.kind] = item.count;
-        return acc;
-      }, {}),
-      byGenre: {}, // SQLite에서는 장르 통계는 추후 구현
+      total: supabaseStats.total,
+      byKind: supabaseStats.byKind,
+      byGenre: {}, // 장르 통계는 추후 구현
       avgRating: 0,
       totalVotes: 0
     };
