@@ -145,17 +145,28 @@ export async function listContents(kind?: string): Promise<Content[]> {
 }
 
 export async function getContentsByIds(ids: string[]): Promise<Content[]> {
-  if (!isSupabaseConnected || ids.length === 0) {
+  console.log('🔍 getContentsByIds called with:', ids);
+
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    console.log('⚠️ Invalid or empty IDs array');
+    return [];
+  }
+
+  if (!isSupabaseConnected) {
+    console.log('⚠️ Supabase not connected, using mock data');
     // Fallback to mock data
     return mockContents.filter(c => ids.includes(c.id) && c.is_active);
   }
 
   try {
+    console.log('🔎 Querying Supabase for IDs:', ids);
     const { data, error } = await supabaseAdmin
       .from('contents')
       .select('*')
       .in('id', ids)
       .eq('is_active', true);
+
+    console.log('📊 Supabase response - data:', data?.length, 'error:', error);
 
     if (error) {
       console.error('Error fetching contents by IDs:', error);

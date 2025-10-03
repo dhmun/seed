@@ -25,27 +25,23 @@ const campaignTexts = [
   }
 ];
 
-// Curated list of content IDs for campaign-appropriate backgrounds
-const curatedContentIds = ['1', '2', 'tv_157239']; // 기생충, 미나리, 더 베어
-
 export default async function Home() {
-  // Fetch the specific, curated contents for the hero slider backgrounds
+  // Fetch popular contents for the hero slider backgrounds
   const { data: contents, error } = await supabase
     .from('contents')
     .select('id, thumbnail_url, backdrop_url, release_date, vote_average')
-    .in('id', curatedContentIds);
+    .not('backdrop_url', 'is', null)
+    .order('vote_average', { ascending: false })
+    .limit(3);
 
   if (error) {
     console.error("Error fetching curated contents:", error.message);
   }
 
-  // Re-order the fetched contents to match the curated order for consistency
-  const orderedContents = curatedContentIds
-    .map(id => (contents || []).find(content => content.id === id))
-    .filter((c): c is Content => c !== undefined);
+  const orderedContents = contents || [];
 
   // Transform Supabase data, merging it with the static campaign text
-  const heroItems: HeroItem[] = orderedContents.map((content, index) => ({
+  const heroItems: HeroItem[] = orderedContents.map((content: any, index: number) => ({
     // Use static text, cycling through the campaignTexts array
     ...campaignTexts[index % campaignTexts.length],
     // Use dynamic data for ID and images from the database

@@ -2,30 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Heart, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Heart,
   MessageSquare,
   AlertCircle,
   Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getContentsByIds } from '@/server/actions/contents';
-import { getSpotifyTracksByIds } from '@/server/actions/spotify';
+import { getSpotifyTracksByIds, type SpotifyTrackRow } from '@/server/actions/spotify';
 import { createPack } from '@/server/actions/packs';
 import { createPackSchema } from '@/lib/validations';
 import type { Content } from '@/lib/supabase';
-import { Database } from '@/lib/supabase';
-
-type SpotifyTrackRow = Database['public']['Tables']['spotify_tracks']['Row'];
 
 export default function Customize() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedContents, setSelectedContents] = useState<Content[]>([]);
   const [selectedSpotifyTracks, setSelectedSpotifyTracks] = useState<SpotifyTrackRow[]>([]);
   const [selectedSpotifyTrackIds, setSelectedSpotifyTrackIds] = useState<string[]>([]);
@@ -38,61 +38,88 @@ export default function Customize() {
   useEffect(() => {
     async function loadSelectedContents() {
       try {
-        // URL 쿼리에서 선택된 콘텐츠 ID와 Spotify ID 읽기
-        const urlParams = new URLSearchParams(window.location.search);
-        const idsParam = urlParams.get('ids');
-        const spotifyIdsParam = urlParams.get('spotifyIds');
-        const capacityParam = urlParams.get('capacity');
-        
-        // Spotify 트랙 ID 파싱
-        if (spotifyIdsParam) {
-          const spotifyIds = spotifyIdsParam.split(',').filter(id => id.trim());
-          setSelectedSpotifyTrackIds(spotifyIds);
-        }
-        
-        if (!idsParam) {
-          // URL에 데이터가 없으면 localStorage에서 fallback으로 시도
-          const savedIds = localStorage.getItem('selectedContentIds');
-          if (!savedIds) {
-            toast.error('선택된 콘텐츠가 없습니다. 다시 선택해주세요.');
-            window.location.href = '/builder/select';
-            return;
-          }
-          
-          const contentIds = JSON.parse(savedIds);
-          const contents = await getContentsByIds(contentIds);
-          setSelectedContents(contents);
-        } else {
-          // URL 쿼리에서 콘텐츠 ID 파싱
-          const contentIds = idsParam.split(',').filter(id => id.trim());
-          if (contentIds.length > 0) {
-            const contents = await getContentsByIds(contentIds);
-            setSelectedContents(contents);
-          }
-          
-          // localStorage에도 저장 (fallback용)
+        // URL 쿼리에서 읽기
+        const idsParam = searchParams.get('ids');
+        const spotifyIdsParam = searchParams.get('spotifyIds');
+        const capacityParam = searchParams.get('capacity');
+
+        let contentIds: string[] = [];
+        let spotifyIds: string[] = [];
+
+        // URL 우선, localStorage fallback
+        if (idsParam) {
+          contentIds = idsParam.split(',').filter(id => id.trim());
+          // URL 데이터를 localStorage에 동기화
           localStorage.setItem('selectedContentIds', JSON.stringify(contentIds));
-          if (capacityParam) {
-            localStorage.setItem('targetCapacity', capacityParam);
+        } else {
+          // localStorage fallback
+          const savedIds = localStorage.getItem('selectedContentIds');
+          if (savedIds) {
+            contentIds = JSON.parse(savedIds);
           }
         }
 
+        if (spotifyIdsParam) {
+          spotifyIds = spotifyIdsParam.split(',').filter(id => id.trim());
+          localStorage.setItem('selectedSpotifyTrackIds', JSON.stringify(spotifyIds));
+        } else {
+          const savedSpotifyIds = localStorage.getItem('selectedSpotifyTrackIds');
+          if (savedSpotifyIds) {
+            spotifyIds = JSON.parse(savedSpotifyIds);
+          }
+        }
+
+        if (capacityParam) {
+          localStorage.setItem('targetCapacity', capacityParam);
+        }
+
+        // 데이터 검증
+        if (contentIds.length === 0 && spotifyIds.length === 0) {
+          toast.error('선택된 콘텐츠가 없습니다. 다시 선택해주세요.');
+          router.push('/builder/select');
+          return;
+        }
+
+        console.log('📋 Loading data:', { contentIds: contentIds.length, spotifyIds: spotifyIds.length });
+
+        // 콘텐츠 로드
+        if (contentIds.length > 0) {
+          const contents = await getContentsByIds(contentIds);
+
+          // 데이터 불일치 체크
+          if (contents.length !== contentIds.length) {
+            console.warn(`⚠️ Mismatch: expected ${contentIds.length}, got ${contents.length}`);
+            toast.warning(`${contentIds.length - contents.length}개 콘텐츠를 불러오지 못했습니다.`);
+          }
+
+          setSelectedContents(contents);
+        }
+
+        // Spotify 트랙 ID 설정
+        if (spotifyIds.length > 0) {
+          setSelectedSpotifyTrackIds(spotifyIds);
+        }
+
       } catch (error) {
-        toast.error('선택된 콘텐츠를 불러오는데 실패했습니다.');
-        console.error('Error loading selected contents:', error);
+        console.error('Error loading contents:', error);
+        toast.error('콘텐츠를 불러오는데 실패했습니다.');
+        // 3초 후 select 페이지로 리다이렉트
+        setTimeout(() => router.push('/builder/select'), 3000);
       } finally {
         setLoading(false);
       }
     }
 
     loadSelectedContents();
-  }, []);
+  }, [searchParams, router]);
 
   // 음악 ID 상태가 변경될 때마다 정보를 가져오는 useEffect
   useEffect(() => {
     if (selectedSpotifyTrackIds.length > 0) {
       getSpotifyTracksByIds(selectedSpotifyTrackIds)
-        .then(setSelectedSpotifyTracks)
+        .then((tracks) => {
+          setSelectedSpotifyTracks(tracks);
+        })
         .catch(error => {
           toast.error('선택한 음악 정보를 불러오는 데 실패했습니다.');
           console.error('Error loading spotify tracks:', error);
@@ -111,36 +138,25 @@ export default function Customize() {
       return;
     }
 
-    // 선택된 콘텐츠 ID 구하기 (URL 우선, localStorage fallback)
-    let selectedContentIds: string[] = [];
-    
-    // URL 쿼리에서 먼저 시도
-    const urlParams = new URLSearchParams(window.location.search);
-    const idsParam = urlParams.get('ids');
-    
-    if (idsParam) {
-      selectedContentIds = idsParam.split(',').filter(id => id.trim());
-    } else {
-      // fallback: localStorage에서 가져오기
-      const savedIds = localStorage.getItem('selectedContentIds');
-      if (!savedIds) {
-        toast.error('선택된 콘텐츠 정보가 없습니다.');
-        return;
-      }
-      selectedContentIds = JSON.parse(savedIds);
+    // 선택된 콘텐츠 ID 구하기
+    const selectedContentIds = selectedContents.map(c => c.id);
+
+    if (selectedContentIds.length === 0 && selectedSpotifyTrackIds.length === 0) {
+      toast.error('선택된 콘텐츠 정보가 없습니다.');
+      return;
     }
 
     try {
       console.log('Debug - Validation input:', {
         name: packName,
         nameLength: packName.length,
-        nameChars: packName.split('').map(c => `${c}(${c.charCodeAt(0)})`),
         message: message,
-        selectedContentIds: selectedContentIds
+        selectedContentIds: selectedContentIds.length,
+        selectedSpotifyTrackIds: selectedSpotifyTrackIds.length
       });
-      
+
       const totalContentIds = [...selectedContentIds, ...selectedSpotifyTrackIds];
-      
+
       createPackSchema.parse({
         name: packName,
         message: message,
@@ -149,13 +165,12 @@ export default function Customize() {
 
       // 미디어팩 생성
       setSubmitting(true);
-      
+
       try {
-        const { slug, serial, allContentIds } = await createPack({
+        const { slug, serial } = await createPack({
           name: packName,
           message: message,
-          selectedContentIds: selectedContentIds,
-          selectedSpotifyTrackIds: selectedSpotifyTrackIds
+          selectedContentIds: totalContentIds
         });
 
         // 생성된 미디어팩 정보를 결과 페이지로 전달
@@ -164,16 +179,17 @@ export default function Customize() {
           serial,
           name: packName,
           message: message,
-          selectedContentIds: allContentIds
+          selectedContentIds: totalContentIds
         };
 
         localStorage.setItem('packResult', JSON.stringify(packResult));
         // 기존 localStorage 정리
         localStorage.removeItem('selectedContentIds');
-        localStorage.removeItem('packData');
-        
-        window.location.href = '/builder/result';
-        
+        localStorage.removeItem('selectedSpotifyTrackIds');
+        localStorage.removeItem('targetCapacity');
+
+        router.push('/builder/result');
+
       } catch (error) {
         console.error('Pack creation error:', error);
         toast.error('미디어팩 생성에 실패했습니다. 다시 시도해주세요.');

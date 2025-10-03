@@ -1,6 +1,6 @@
 // src/hooks/useContents.ts
 import { useState, useEffect, useCallback } from 'react';
-import { Content } from '@/lib/database';
+import { Content } from '@/lib/supabase';
 
 interface UseContentsParams {
   kind?: string;
@@ -52,21 +52,29 @@ export function useContents({
 
     try {
       const params = new URLSearchParams();
-      
+
       if (kind) params.append('kind', kind);
       if (search) params.append('search', search);
       params.append('page', reset ? '1' : currentPage.toString());
       params.append('limit', limit.toString());
 
       const response = await fetch(`/api/contents?${params}`);
-      
+
       if (!response.ok) {
-        throw new Error('콘텐츠를 불러오는데 실패했습니다.');
+        const errorText = await response.text().catch(() => '');
+        console.error('Contents fetch failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          body: errorText
+        });
+        throw new Error(`콘텐츠 불러오기 실패 (status: ${response.status})`);
       }
 
       const data: { success: boolean; data: ContentsResponse; error?: string } = await response.json();
-      
+
       if (!data.success) {
+        console.error('API returned error:', data.error);
         throw new Error(data.error || '콘텐츠를 불러오는데 실패했습니다.');
       }
 
@@ -152,14 +160,22 @@ export function usePopularContents(kind?: string, limit = 10) {
       if (kind) params.append('kind', kind);
 
       const response = await fetch(`/api/contents?${params}`);
-      
+
       if (!response.ok) {
-        throw new Error('인기 콘텐츠를 불러오는데 실패했습니다.');
+        const errorText = await response.text().catch(() => '');
+        console.error('Popular contents fetch failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          body: errorText
+        });
+        throw new Error(`인기 콘텐츠 불러오기 실패 (status: ${response.status})`);
       }
 
       const data: { success: boolean; data: ContentsResponse; error?: string } = await response.json();
-      
+
       if (!data.success) {
+        console.error('API returned error:', data.error);
         throw new Error(data.error || '인기 콘텐츠를 불러오는데 실패했습니다.');
       }
 

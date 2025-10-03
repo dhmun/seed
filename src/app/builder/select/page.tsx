@@ -3,14 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  Check, 
+import {
+  ArrowLeft,
+  ArrowRight,
+  Check,
   AlertTriangle,
   HardDrive,
   Filter,
@@ -19,12 +20,12 @@ import {
 import { toast } from 'sonner';
 import { useContents, usePopularContents } from '@/hooks/useContents';
 import { formatFileSize, calculateTotalSize, getCapacityInMB, getContentKindLabel } from '@/lib/utils';
-import type { Content } from '@/lib/database';
+import type { Content } from '@/lib/supabase';
 
 import SpotifyTrackSelector from '@/components/spotify-track-selector';
 import TopNav from '@/components/nav/top-nav';
 
-const contentKinds: { value: Content['kind'] | 'all'; label: string; icon: string }[] = [
+const contentKinds: { value: Content['kind'] | 'all' | 'spotify'; label: string; icon: string }[] = [
   { value: 'movie', label: '영화', icon: '🎬' },
   { value: 'drama', label: '드라마', icon: '📺' },
   { value: 'show', label: '예능', icon: '🎭' },
@@ -33,9 +34,10 @@ const contentKinds: { value: Content['kind'] | 'all'; label: string; icon: strin
 ];
 
 export default function ContentSelect() {
+  const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedSpotifyTrackIds, setSelectedSpotifyTrackIds] = useState<string[]>([]);
-  const [selectedFilter, setSelectedFilter] = useState<Content['kind'] | 'all'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<Content['kind'] | 'all' | 'spotify'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [targetCapacity, setTargetCapacity] = useState<'32' | '64'>('32');
 
@@ -110,11 +112,30 @@ export default function ContentSelect() {
       return;
     }
 
-    // 선택된 콘텐츠 ID를 URL 쿼리로 전달
-    const idsParam = selectedIds.join(',');
-    const spotifyIdsParam = selectedSpotifyTrackIds.join(',');
-    const capacityParam = targetCapacity;
-    window.location.href = `/builder/customize?ids=${idsParam}&spotifyIds=${spotifyIdsParam}&capacity=${capacityParam}`;
+    // localStorage 동기화 (페이지 전환 시 데이터 유지)
+    try {
+      localStorage.setItem('selectedContentIds', JSON.stringify(selectedIds));
+      localStorage.setItem('selectedSpotifyTrackIds', JSON.stringify(selectedSpotifyTrackIds));
+      localStorage.setItem('targetCapacity', targetCapacity);
+
+      console.log('📦 Saved to localStorage:', {
+        contentIds: selectedIds.length,
+        spotifyIds: selectedSpotifyTrackIds.length,
+        capacity: targetCapacity
+      });
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error);
+      toast.error('데이터 저장에 실패했습니다. 다시 시도해주세요.');
+      return;
+    }
+
+    // Next.js router로 페이지 전환 (URL 쿼리 포함)
+    const params = new URLSearchParams();
+    if (selectedIds.length > 0) params.append('ids', selectedIds.join(','));
+    if (selectedSpotifyTrackIds.length > 0) params.append('spotifyIds', selectedSpotifyTrackIds.join(','));
+    params.append('capacity', targetCapacity);
+
+    router.push(`/builder/customize?${params.toString()}`);
   };
 
   if (loading && contents.length === 0) {

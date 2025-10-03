@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Content } from '@/lib/database';
+import { Content } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { OptimizedImage } from '@/components/ui/OptimizedImage';
@@ -58,7 +58,7 @@ export default function ContentCard({
     return `${sizeInMB} MB`;
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDate = (dateString?: string | null) => {
     if (!dateString) return null;
     try {
       return new Date(dateString).getFullYear();

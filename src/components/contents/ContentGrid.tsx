@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Content } from '@/lib/database';
+import { Content } from '@/lib/supabase';
 import { useContents } from '@/hooks/useContents';
 import ContentCard from './ContentCard';
 import { Button } from '@/components/ui/button';

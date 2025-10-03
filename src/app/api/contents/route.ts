@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllContents, getContentsByKind, getContentsWithPagination, searchContents } from '@/lib/database';
+import { getCachedContents, getPopularContents, searchContents as searchCachedContents, getCachedContentStats } from '@/lib/tmdb-cache';
 import { z } from 'zod';
 
 // 요청 파라미터 검증 스키마
@@ -35,15 +35,8 @@ export async function GET(request: NextRequest) {
 
     // 인기 콘텐츠만 조회하는 경우
     if (popular) {
-      const contents = kind 
-        ? await getContentsByKind(kind)
-        : await getAllContents();
-      
-      // 인기도로 정렬하고 limit 적용
-      const popularContents = contents
-        .sort((a, b) => (b.popularity || 0) - (a.popularity || 0))
-        .slice(0, limit);
-        
+      const popularContents = await getPopularContents(kind, limit);
+
       return NextResponse.json({
         success: true,
         data: {
@@ -58,18 +51,15 @@ export async function GET(request: NextRequest) {
     // 검색 요청인 경우
     if (search) {
       console.log('Search query:', search);
-      const contents = await searchContents(search);
+      const contents = await searchCachedContents(search, { kind, limit });
       console.log('Search results count:', contents.length);
-      const filteredContents = kind 
-        ? contents.filter(c => c.kind === kind)
-        : contents;
-      
+
       return NextResponse.json({
         success: true,
         data: {
-          contents: filteredContents.slice(0, limit),
-          total: filteredContents.length,
-          hasMore: filteredContents.length > limit,
+          contents: contents,
+          total: contents.length,
+          hasMore: false, // 검색 결과는 이미 제한됨
           page: 1,
           query: search
         }
@@ -77,7 +67,14 @@ export async function GET(request: NextRequest) {
     }
 
     // 일반 콘텐츠 목록 조회
-    const result = await getContentsWithPagination(page, limit, kind);
+    const result = await getCachedContents({
+      kind,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      genre: genreIds
+    });
 
     return NextResponse.json({
       success: true,
@@ -119,17 +116,7 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'stats':
         // 간단한 통계 반환
-        const allContents = await getAllContents();
-        const stats = {
-          total: allContents.length,
-          byKind: {
-            movie: allContents.filter(c => c.kind === 'movie').length,
-            drama: allContents.filter(c => c.kind === 'drama').length,
-            show: allContents.filter(c => c.kind === 'show').length,
-            kpop: allContents.filter(c => c.kind === 'kpop').length,
-            doc: allContents.filter(c => c.kind === 'doc').length
-          }
-        };
+        const stats = await getCachedContentStats();
         return NextResponse.json({
           success: true,
           data: stats
