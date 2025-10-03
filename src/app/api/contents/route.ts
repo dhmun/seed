@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCachedContents, getPopularContents, searchContents as searchCachedContents, getCachedContentStats } from '@/lib/tmdb-cache';
 import { z } from 'zod';
 
+// API 동적 렌더링 강제
+export const dynamic = 'force-dynamic';
+
 // 요청 파라미터 검증 스키마
 const contentsParamsSchema = z.object({
   kind: z.string().optional(),

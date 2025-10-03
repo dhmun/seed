@@ -20,7 +20,8 @@
       "Bash(curl:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(npx shadcn@latest add:*)"
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(timeout 60 npm run type-check)"
     ],
     "deny": [],
     "ask": []

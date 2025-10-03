@@ -3,6 +3,23 @@
 import { supabaseAdmin, isSupabaseConnected } from '@/lib/supabase';
 import type { Content } from '@/lib/supabase';
 
+// Mock 데이터 타입 헬퍼
+const createMockContent = (partial: Partial<Content> & Pick<Content, 'id' | 'kind' | 'title' | 'summary' | 'thumbnail_url' | 'size_mb' | 'is_active' | 'created_at'>): Content => ({
+  tmdb_id: null,
+  vote_average: null,
+  release_date: null,
+  genre_ids: null,
+  popularity: null,
+  original_title: null,
+  backdrop_url: null,
+  tmdb_type: null,
+  vote_count: null,
+  adult: null,
+  original_language: null,
+  updated_at: partial.created_at || new Date().toISOString(),
+  ...partial
+});
+
 // Mock 데이터 (개발 모드용) - TMDb API에서 가져온 실제 데이터
 const mockContents: Content[] = [
   // URL에서 사용되는 ID들을 위한 데이터
@@ -14,7 +31,19 @@ const mockContents: Content[] = [
     thumbnail_url: 'https://image.tmdb.org/t/p/w500/sKCr78MXSLixwmZ8DyJLrpMsd15.jpg',
     size_mb: 4200,
     is_active: true,
-    created_at: '2025-09-04T21:25:24.291Z'
+    created_at: '2025-09-04T21:25:24.291Z',
+    tmdb_id: null,
+    vote_average: null,
+    release_date: null,
+    genre_ids: null,
+    popularity: null,
+    original_title: null,
+    backdrop_url: null,
+    tmdb_type: null,
+    vote_count: null,
+    adult: null,
+    original_language: null,
+    updated_at: '2025-09-04T21:25:24.291Z'
   },
   {
     id: 'movie_1311031',
@@ -24,7 +53,19 @@ const mockContents: Content[] = [
     thumbnail_url: 'https://image.tmdb.org/t/p/w500/4YZpsylmjHbqeWzjKpUEF8gcLNW.jpg',
     size_mb: 3850,
     is_active: true,
-    created_at: '2025-09-04T21:25:24.292Z'
+    created_at: '2025-09-04T21:25:24.292Z',
+    tmdb_id: null,
+    vote_average: null,
+    release_date: null,
+    genre_ids: null,
+    popularity: null,
+    original_title: null,
+    backdrop_url: null,
+    tmdb_type: null,
+    vote_count: null,
+    adult: null,
+    original_language: null,
+    updated_at: '2025-09-04T21:25:24.292Z'
   },
   {
     id: 'tv_119051',
@@ -34,7 +75,19 @@ const mockContents: Content[] = [
     thumbnail_url: 'https://image.tmdb.org/t/p/w500/9PFonBhy4cQy7Jz20NpMygczOkv.jpg',
     size_mb: 5200,
     is_active: true,
-    created_at: '2025-09-04T21:25:24.293Z'
+    created_at: '2025-09-04T21:25:24.293Z',
+    tmdb_id: null,
+    vote_average: null,
+    release_date: null,
+    genre_ids: null,
+    popularity: null,
+    original_title: null,
+    backdrop_url: null,
+    tmdb_type: null,
+    vote_count: null,
+    adult: null,
+    original_language: null,
+    updated_at: '2025-09-04T21:25:24.293Z'
   },
   {
     id: 'movie_506763',
@@ -44,9 +97,21 @@ const mockContents: Content[] = [
     thumbnail_url: 'https://image.tmdb.org/t/p/w500/xeItgLjkoata9YKs3kH0mp5cuKB.jpg',
     size_mb: 4500,
     is_active: true,
-    created_at: '2025-09-04T21:25:24.294Z'
+    created_at: '2025-09-04T21:25:24.294Z',
+    tmdb_id: null,
+    vote_average: null,
+    release_date: null,
+    genre_ids: null,
+    popularity: null,
+    original_title: null,
+    backdrop_url: null,
+    tmdb_type: null,
+    vote_count: null,
+    adult: null,
+    original_language: null,
+    updated_at: '2025-09-04T21:25:24.294Z'
   },
-  {
+  createMockContent({
     id: 'tv_157239',
     kind: 'drama',
     title: '더 베어',
@@ -55,8 +120,8 @@ const mockContents: Content[] = [
     size_mb: 3200,
     is_active: true,
     created_at: '2025-09-04T21:25:24.295Z'
-  },
-  {
+  }),
+  createMockContent({
     id: 'movie_911430',
     kind: 'movie',
     title: '바빌론',
@@ -65,9 +130,9 @@ const mockContents: Content[] = [
     size_mb: 6800,
     is_active: true,
     created_at: '2025-09-04T21:25:24.296Z'
-  },
+  }),
   // 영화들 (40개)
-  {
+  createMockContent({
     id: '1',
     kind: 'movie',
     title: '우주전쟁',
@@ -76,8 +141,8 @@ const mockContents: Content[] = [
     size_mb: 3763,
     is_active: true,
     created_at: '2025-09-04T21:25:24.291Z'
-  },
-  {
+  }),
+  createMockContent({
     id: '2',
     kind: 'movie',
     title: 'F1 더 무비',
@@ -86,9 +151,9 @@ const mockContents: Content[] = [
     size_mb: 7856,
     is_active: true,
     created_at: '2025-09-04T21:25:24.292Z'
-  },
+  }),
   // ... (mock data is truncated for brevity)
-  {
+  createMockContent({
     id: '100',
     kind: 'drama',
     title: '패밀리 가이',
@@ -97,7 +162,7 @@ const mockContents: Content[] = [
     size_mb: 10865,
     is_active: true,
     created_at: '2025-09-04T21:25:24.292Z'
-  }
+  })
 ];
 
 export async function listContents(kind?: string): Promise<Content[]> {

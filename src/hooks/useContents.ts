@@ -62,11 +62,11 @@ export function useContents({
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
-        console.error('Contents fetch failed:', {
+        console.error('[useContents] /api/contents failed', {
           status: response.status,
           statusText: response.statusText,
           url: response.url,
-          body: errorText
+          body: errorText.slice(0, 500)
         });
         throw new Error(`콘텐츠 불러오기 실패 (status: ${response.status})`);
       }
@@ -163,13 +163,14 @@ export function usePopularContents(kind?: string, limit = 10) {
 
       if (!response.ok) {
         const errorText = await response.text().catch(() => '');
-        console.error('Popular contents fetch failed:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-          body: errorText
-        });
-        throw new Error(`인기 콘텐츠 불러오기 실패 (status: ${response.status})`);
+        const errorDetails = {
+          status: response?.status || 'unknown',
+          statusText: response?.statusText || 'unknown',
+          url: response?.url || params.toString(),
+          body: errorText?.slice(0, 500) || 'no body'
+        };
+        console.error('[useContents] /api/contents (popular) failed', errorDetails);
+        throw new Error(`인기 콘텐츠 불러오기 실패 (status: ${errorDetails.status})`);
       }
 
       const data: { success: boolean; data: ContentsResponse; error?: string } = await response.json();

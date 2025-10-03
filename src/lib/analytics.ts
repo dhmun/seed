@@ -15,7 +15,7 @@ export async function trackEvent(action: string, data: Record<string, string | n
     });
   } catch (error) {
     // 추적 실패해도 사용자 경험에 영향주지 않음
-    console.warn('Analytics tracking failed:', error);
+    console.warn('[analytics] /api/track failed:', error);
   }
 }
 
