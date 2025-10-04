@@ -20,14 +20,25 @@ export interface MediaItem {
   isPopular?: boolean;
 }
 
-interface MediaCardProps {
+export interface MediaCardProps {
   item: MediaItem;
   selected?: boolean;
   onSelect?: (item: MediaItem) => void;
   className?: string;
+  onKeyDown?: React.KeyboardEventHandler<HTMLDivElement>;
+  tabIndex?: number;
+  role?: string;
 }
 
-export default function MediaCard({ item, selected, onSelect, className = "" }: MediaCardProps) {
+export default function MediaCard({
+  item,
+  selected,
+  onSelect,
+  className = "",
+  onKeyDown: externalOnKeyDown,
+  tabIndex = 0,
+  role = "button"
+}: MediaCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
 
@@ -40,20 +51,26 @@ export default function MediaCard({ item, selected, onSelect, className = "" }: 
     setIsLiked(!isLiked);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // 외부에서 전달된 onKeyDown 핸들러 먼저 실행
+    externalOnKeyDown?.(e);
+
+    // 기본 키보드 동작 (Enter/Space로 선택)
+    if (!e.defaultPrevented && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      handleSelect();
+    }
+  };
+
   return (
     <motion.div
       className={`group relative aspect-video overflow-hidden rounded-xl bg-zinc-800/60 cursor-pointer transition-all duration-300 hover:scale-105 hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/50 focus:outline-none focus:ring-2 focus:ring-[#e50914] focus:ring-offset-2 focus:ring-offset-[#141414] ${className}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleSelect}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleSelect();
-        }
-      }}
-      tabIndex={0}
-      role="button"
+      onKeyDown={handleKeyDown}
+      tabIndex={tabIndex}
+      role={role}
       aria-label={`${item.title} 선택`}
       whileHover={{ scale: 1.05, y: -8 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
