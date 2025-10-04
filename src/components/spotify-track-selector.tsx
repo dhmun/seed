@@ -45,14 +45,14 @@ export default function SpotifyTrackSelector({
     if (!searchQuery.trim()) {
       // 검색어가 없을 때 인기 트랙들을 보여주기
       try {
-        const { data, error } = await supabase
-          .from('spotify_tracks')
-          .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date')
-          .order('popularity', { ascending: false, nullsFirst: false })
-          .limit(20);
-        
-        if (error) throw error;
-        setSearchResults(data || []);
+        const response = await fetch('/api/spotify/popular');
+        const result = await response.json();
+
+        if (result.success) {
+          setSearchResults(result.data || []);
+        } else {
+          setSearchResults([]);
+        }
       } catch (error) {
         console.error('Error fetching popular tracks:', error);
         setSearchResults([]);
@@ -63,18 +63,12 @@ export default function SpotifyTrackSelector({
     setLoading(true);
     try {
       // 1. 먼저 기존 데이터베이스에서 검색
-      const { data: existingTracks, error: searchError } = await supabase
-        .from('spotify_tracks')
-        .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date')
-        .or(`name.ilike.%${searchQuery}%,artist_names.cs.{${searchQuery}}`)
-        .order('popularity', { ascending: false, nullsFirst: false })
-        .limit(20);
+      const searchResponse = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}`);
+      const searchResult = await searchResponse.json();
 
-      if (searchError) throw searchError;
-
-      if (existingTracks && existingTracks.length > 0) {
+      if (searchResult.success && searchResult.data && searchResult.data.length > 0) {
         // 기존 데이터에서 찾았으면 바로 표시
-        setSearchResults(existingTracks);
+        setSearchResults(searchResult.data);
         setLoading(false);
         return;
       }
@@ -83,20 +77,20 @@ export default function SpotifyTrackSelector({
       const syncResult = await syncSpotifyTracks(searchQuery, 20);
       if (!syncResult.success) {
         toast.error(syncResult.message);
+        setLoading(false);
         return;
       }
-      toast.success(`${syncResult.data?.length || 0}개의 새로운 트랙을 찾았습니다!`);
+      toast.success(syncResult.message);
 
       // 3. 새로 동기화된 트랙 가져오기
-      const { data: newTracks, error: newTracksError } = await supabase
-        .from('spotify_tracks')
-        .select('id,name,artist_names,album_name,album_image_url,preview_url,external_url,duration_ms,popularity,release_date')
-        .or(`name.ilike.%${searchQuery}%,artist_names.cs.{${searchQuery}}`)
-        .order('popularity', { ascending: false, nullsFirst: false })
-        .limit(20);
-      
-      if (newTracksError) throw newTracksError;
-      setSearchResults(newTracks || []);
+      const newSearchResponse = await fetch(`/api/spotify/search?q=${encodeURIComponent(searchQuery)}`);
+      const newSearchResult = await newSearchResponse.json();
+
+      if (newSearchResult.success) {
+        setSearchResults(newSearchResult.data || []);
+      } else {
+        setSearchResults([]);
+      }
 
     } catch (error) {
       console.error('Spotify search failed:', error);
