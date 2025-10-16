@@ -166,7 +166,7 @@ const mockContents: Content[] = [
 ];
 
 export async function listContents(kind?: string): Promise<Content[]> {
-  if (!isSupabaseConnected) {
+  if (!isSupabaseConnected || !supabaseAdmin) {
     // Fallback to mock data
     let filtered = mockContents.filter(c => c.is_active);
     if (kind) {
@@ -217,7 +217,7 @@ export async function getContentsByIds(ids: string[]): Promise<Content[]> {
     return [];
   }
 
-  if (!isSupabaseConnected) {
+  if (!isSupabaseConnected || !supabaseAdmin) {
     console.log('⚠️ Supabase not connected, using mock data');
     // Fallback to mock data
     return mockContents.filter(c => ids.includes(c.id) && c.is_active);
@@ -254,7 +254,7 @@ export async function getContentsByIds(ids: string[]): Promise<Content[]> {
 
 // DB에 콘텐츠 추가 (중복 방지)
 export async function addContentToDb(content: Partial<Content>): Promise<Content> {
-  if (!isSupabaseConnected) {
+  if (!isSupabaseConnected || !supabaseAdmin) {
     // Mock 모드에서는 간단한 ID 생성
     const mockContent: Content = {
       id: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -265,7 +265,18 @@ export async function addContentToDb(content: Partial<Content>): Promise<Content
       size_mb: content.size_mb || Math.floor(Math.random() * (500 - 50 + 1)) + 50,
       is_active: true,
       created_at: new Date().toISOString(),
-      ...content
+      tmdb_id: content.tmdb_id || null,
+      vote_average: content.vote_average || null,
+      release_date: content.release_date || null,
+      genre_ids: content.genre_ids || null,
+      popularity: content.popularity || null,
+      original_title: content.original_title || null,
+      backdrop_url: content.backdrop_url || null,
+      tmdb_type: content.tmdb_type || null,
+      vote_count: content.vote_count || null,
+      adult: content.adult || null,
+      original_language: content.original_language || null,
+      updated_at: new Date().toISOString()
     };
     return mockContent;
   }
@@ -279,12 +290,22 @@ export async function addContentToDb(content: Partial<Content>): Promise<Content
       thumbnail_url: content.thumbnail_url || '',
       size_mb: content.size_mb || Math.floor(Math.random() * (500 - 50 + 1)) + 50,
       is_active: true,
-      ...content
+      tmdb_id: content.tmdb_id ?? null,
+      vote_average: content.vote_average ?? null,
+      release_date: content.release_date ?? null,
+      genre_ids: content.genre_ids ?? null,
+      popularity: content.popularity ?? null,
+      original_title: content.original_title ?? null,
+      backdrop_url: content.backdrop_url ?? null,
+      tmdb_type: content.tmdb_type ?? null,
+      vote_count: content.vote_count ?? null,
+      adult: content.adult ?? null,
+      original_language: content.original_language ?? null
     };
 
     const { data, error } = await supabaseAdmin
       .from('contents')
-      .upsert(newContent)
+      .upsert(newContent as any)
       .select()
       .single();
 
@@ -301,7 +322,7 @@ export async function addContentToDb(content: Partial<Content>): Promise<Content
 }
 
 export async function getContentStats() {
-  if (!isSupabaseConnected) {
+  if (!isSupabaseConnected || !supabaseAdmin) {
     // Mock 데이터 기반 통계 반환
     const total = mockContents.length;
     const byKind = mockContents.reduce((acc: Record<string, number>, content: { kind: string }) => {

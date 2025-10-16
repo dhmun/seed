@@ -36,7 +36,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
 
   try {
     // 2. 새로운 팩 시리얼 번호 가져오기
-    const { data: serialData, error: rpcError } = await supabaseAdmin.rpc('increment_counter', { counter_key: 'pack_serial' });
+    const { data: serialData, error: rpcError } = await supabaseAdmin.rpc('increment_counter', { counter_key: 'pack_serial' } as any);
     if (rpcError) throw new Error(`Failed to increment pack serial: ${rpcError.message}`);
     const serial = serialData;
 
@@ -49,7 +49,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
         message: data.message,
         serial: serial,
         share_slug: shareSlug,
-      })
+      } as any)
       .select()
       .single();
 
@@ -78,7 +78,7 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
 
     const { error: itemsError } = await supabaseAdmin
       .from('pack_items')
-      .insert(packItems);
+      .insert(packItems as any);
 
     if (itemsError) {
       // 롤백을 위해 방금 만든 팩을 삭제할 수도 있지만, 우선 에러를 던집니다.
@@ -200,7 +200,7 @@ export async function updatePackOgImage(slug: string, ogImageUrl: string): Promi
   try {
     const { error } = await supabaseAdmin
       .from('packs')
-      .update({ og_image_url: ogImageUrl })
+      .update({ og_image_url: ogImageUrl } as any)
       .eq('share_slug', slug);
 
     if (error) {
