@@ -35,7 +35,7 @@ async function fetchMultiplePages(type) {
   let allResults = [];
   console.log(`📡 ${type === 'movie' ? '영화' : 'TV'} 데이터 가져오는 중 (총 ${PAGES_TO_FETCH} 페이지)...
 `);
-  
+
   for (let page = 1; page <= PAGES_TO_FETCH; page++) {
     const url = `${TMDB_API_BASE_URL}/${type}/popular?language=ko-KR&page=${page}`;
     const options = {
@@ -47,31 +47,70 @@ async function fetchMultiplePages(type) {
     };
 
     const response = await fetch(url, options);
-    
+
     if (!response.ok) {
       console.error(`  - ${page}페이지 로드 실패: ${response.statusText}`);
       continue; // 한 페이지 실패 시 다음 페이지로 넘어감
     }
-    
+
     const data = await response.json();
     allResults.push(...data.results);
     console.log(`  - ${page}페이지 로드 완료 (현재까지 ${allResults.length}개)`);
-    
+
     // API 제한 준수를 위한 지연
     await new Promise(resolve => setTimeout(resolve, 250));
   }
-  
+
   console.log(`✅ ${type === 'movie' ? '영화' : 'TV'} ${allResults.length}개 수집 완료`);
+  return allResults;
+}
+
+/**
+ * 특정 장르의 콘텐츠를 가져오는 함수
+ * @param {'movie' | 'tv'} type - 가져올 콘텐츠 타입
+ * @param {number} genreId - 장르 ID (99=다큐멘터리, 10764=Reality, 10767=Talk)
+ * @param {number} pages - 가져올 페이지 수
+ */
+async function fetchByGenre(type, genreId, pages = 10) {
+  let allResults = [];
+  const genreName = genreId === 99 ? '다큐멘터리' : '예능';
+  console.log(`📡 ${genreName} (${type}) 데이터 가져오는 중 (총 ${pages} 페이지)...`);
+
+  for (let page = 1; page <= pages; page++) {
+    const url = `${TMDB_API_BASE_URL}/discover/${type}?with_genres=${genreId}&language=ko-KR&page=${page}&sort_by=popularity.desc`;
+    const options = {
+      method: 'GET',
+      headers: {
+        accept: 'application/json',
+        Authorization: `Bearer ${TMDB_ACCESS_TOKEN}`
+      }
+    };
+
+    const response = await fetch(url, options);
+
+    if (!response.ok) {
+      console.error(`  - ${page}페이지 로드 실패: ${response.statusText}`);
+      continue;
+    }
+
+    const data = await response.json();
+    allResults.push(...data.results);
+    console.log(`  - ${page}페이지 로드 완료 (현재까지 ${allResults.length}개)`);
+
+    // API 제한 준수를 위한 지연
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+
+  console.log(`✅ ${genreName} (${type}) ${allResults.length}개 수집 완료`);
   return allResults;
 }
 
 /**
  * TMDb 데이터를 우리 DB 스키마에 맞게 변환하는 함수
  * @param {object} item - TMDb의 개별 영화/드라마 객체
- * @param {'movie' | 'drama'} kind - 콘텐츠 종류
  * @param {'movie' | 'tv'} tmdb_type - TMDb 타입
  */
-function transformData(item, kind, tmdb_type) {
+function transformData(item, tmdb_type) {
   // 줄거리나 포스터가 없는 데이터는 제외
   if (!item.overview || !item.poster_path) {
     return null;
@@ -82,12 +121,36 @@ function transformData(item, kind, tmdb_type) {
     return null;
   }
 
+  // kind 결정 로직
+  let kind;
+  const genreIds = item.genre_ids || [];
+
+  // 1. 다큐멘터리 체크 (영화/TV 모두 장르 ID 99)
+  const isDocumentary = genreIds.includes(99);
+  if (isDocumentary) {
+    kind = 'doc';
+  } else if (tmdb_type === 'movie') {
+    // 2. 영화
+    kind = 'movie';
+  } else {
+    // 3. TV 프로그램의 경우 장르로 구분
+    // TMDb TV 장르 ID: 10764(Reality), 10767(Talk)
+    const varietyGenres = [10764, 10767]; // Reality, Talk Show
+    const isVarietyShow = varietyGenres.some(id => genreIds.includes(id));
+
+    kind = isVarietyShow ? 'show' : 'drama';
+  }
+
   // TMDb에는 파일 크기 정보가 없으므로, 현실적인 가상 용량을 랜덤으로 생성합니다.
   const size_mb = kind === 'movie'
     ? Math.floor(Math.random() * (8000 - 3000 + 1)) + 3000 // 영화: 3GB ~ 8GB
-    : Math.floor(Math.random() * (20000 - 10000 + 1)) + 10000; // 드라마: 10GB ~ 20GB
+    : Math.floor(Math.random() * (20000 - 10000 + 1)) + 10000; // 드라마/예능: 10GB ~ 20GB
+
+  // ID 생성: tmdb_type-tmdb_id 형식 (예: tv-12345)
+  const id = `${tmdb_type}-${item.id}`;
 
   return {
+    id: id,
     kind: kind,
     title: item.title || item.name,
     original_title: item.original_title || item.original_name,
@@ -153,24 +216,82 @@ async function main() {
   }
 
   try {
-    // 1. 인기 영화 가져오기 (주석 처리)
-    // const movies = await fetchMultiplePages('movie');
-    
-    // 2. 인기 드라마 1000개 가져오기 (50페이지)
-    const dramas = await fetchMultiplePages('tv');
-    
-    console.log(`\n📺 드라마 ${dramas.length}개 수집 완료`);
-    
-    // 3. 우리 DB 스키마에 맞게 데이터 변환
+    // 1. 인기 영화 가져오기 (50페이지 = 1000개)
+    console.log('\n🎬 영화 데이터 수집 시작...');
+    const movies = await fetchMultiplePages('movie');
+
+    // 2. 인기 TV 프로그램(드라마/예능) 가져오기 (50페이지 = 1000개)
+    console.log('\n📺 TV 프로그램 데이터 수집 시작...');
+    const tvShows = await fetchMultiplePages('tv');
+
+    // 3. 다큐멘터리 직접 검색 (영화 + TV, 10페이지씩 = 400개)
+    console.log('\n📽️ 다큐멘터리 직접 검색 시작...');
+    const movieDocs = await fetchByGenre('movie', 99, 10);
+    const tvDocs = await fetchByGenre('tv', 99, 10);
+
+    // 4. 예능 직접 검색 (Reality + Talk Show, 10페이지씩 = 400개)
+    console.log('\n🎭 예능 프로그램 직접 검색 시작...');
+    const realityShows = await fetchByGenre('tv', 10764, 10); // Reality
+    const talkShows = await fetchByGenre('tv', 10767, 10); // Talk Show
+
+    console.log(`\n✅ 수집 완료:`);
+    console.log(`   - 영화: ${movies.length}개`);
+    console.log(`   - TV 프로그램: ${tvShows.length}개`);
+    console.log(`   - 다큐멘터리 (영화): ${movieDocs.length}개`);
+    console.log(`   - 다큐멘터리 (TV): ${tvDocs.length}개`);
+    console.log(`   - 리얼리티 쇼: ${realityShows.length}개`);
+    console.log(`   - 토크쇼: ${talkShows.length}개`);
+
+    // 5. 우리 DB 스키마에 맞게 데이터 변환
     console.log('\n🔄 데이터 변환 중...');
-    // const transformedMovies = movies.map(movie => transformData(movie, 'movie', 'movie')).filter(Boolean); // null 데이터 제거
-    const transformedDramas = dramas.map(drama => transformData(drama, 'drama', 'tv')).filter(Boolean);
+    const transformedMovies = movies.map(movie => transformData(movie, 'movie')).filter(Boolean);
+    const transformedTvShows = tvShows.map(show => transformData(show, 'tv')).filter(Boolean);
+    const transformedMovieDocs = movieDocs.map(doc => transformData(doc, 'movie')).filter(Boolean);
+    const transformedTvDocs = tvDocs.map(doc => transformData(doc, 'tv')).filter(Boolean);
+    const transformedReality = realityShows.map(show => transformData(show, 'tv')).filter(Boolean);
+    const transformedTalk = talkShows.map(show => transformData(show, 'tv')).filter(Boolean);
 
-    const allContents = [...transformedDramas];
+    // 통계 출력 (모든 콘텐츠를 합쳐서 kind별로 카운트)
+    const allContentsTemp = [
+      ...transformedMovies,
+      ...transformedTvShows,
+      ...transformedMovieDocs,
+      ...transformedTvDocs,
+      ...transformedReality,
+      ...transformedTalk
+    ];
+    const movieCount = allContentsTemp.filter(c => c.kind === 'movie').length;
+    const dramaCount = allContentsTemp.filter(c => c.kind === 'drama').length;
+    const showCount = allContentsTemp.filter(c => c.kind === 'show').length;
+    const docCount = allContentsTemp.filter(c => c.kind === 'doc').length;
 
-    console.log(`\n✅ 총 ${allContents.length}개의 유효한 콘텐츠 변환 완료`);
+    console.log(`   - 영화: ${movieCount}개`);
+    console.log(`   - 드라마: ${dramaCount}개`);
+    console.log(`   - 예능: ${showCount}개`);
+    console.log(`   - 다큐멘터리: ${docCount}개`);
 
-    if (allContents.length === 0) {
+    const allContents = [
+      ...transformedMovies,
+      ...transformedTvShows,
+      ...transformedMovieDocs,
+      ...transformedTvDocs,
+      ...transformedReality,
+      ...transformedTalk
+    ];
+
+    // 중복 ID 제거 (동일한 ID가 여러 번 나타나는 경우 첫 번째만 유지)
+    const uniqueContents = [];
+    const seenIds = new Set();
+    for (const content of allContents) {
+      if (!seenIds.has(content.id)) {
+        seenIds.add(content.id);
+        uniqueContents.push(content);
+      }
+    }
+
+    console.log(`\n✅ 총 ${uniqueContents.length}개의 유효한 콘텐츠 변환 완료 (중복 제거: ${allContents.length - uniqueContents.length}개)`);
+
+    if (uniqueContents.length === 0) {
       console.log('⚠️ 동기화할 새로운 콘텐츠가 없습니다.');
       return;
     }
@@ -178,18 +299,16 @@ async function main() {
     // 4. Supabase 연결 여부에 따라 처리 분기
     if (supabase && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
       console.log('\n📡 Supabase에 데이터 업로드 중...');
-      
-      // 기존 contents 테이블의 모든 데이터를 삭제하여 최신 인기 목록으로만 유지
-      console.log('- 기존 콘텐츠 데이터 삭제 중...');
-      const { error: deleteError } = await supabase.from('contents').delete().gt('size_mb', 0); // 모든 row 삭제
-      if (deleteError) throw deleteError;
-      
-      // 새로운 데이터 삽입
-      console.log('- 새로운 데이터 삽입 중...');
-      const { error: insertError } = await supabase.from('contents').insert(allContents);
-      if (insertError) throw insertError;
 
-      console.log(`✅ 성공! ${allContents.length}개의 콘텐츠가 Supabase DB에 동기화되었습니다.`);
+      // upsert를 사용하여 데이터 삽입/업데이트 (중복 시 업데이트)
+      console.log('- 데이터 업서트 중 (중복 시 업데이트)...');
+      const { error: upsertError } = await supabase
+        .from('contents')
+        .upsert(uniqueContents, { onConflict: 'id' });
+
+      if (upsertError) throw upsertError;
+
+      console.log(`✅ 성공! ${uniqueContents.length}개의 콘텐츠가 Supabase DB에 동기화되었습니다.`);
     } else {
       console.log('\n⚠️  Supabase 환경변수가 설정되지 않아 Mock 모드로 실행합니다.');
       generateMockData(allContents);

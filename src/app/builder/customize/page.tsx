@@ -170,7 +170,8 @@ export default function Customize() {
         const { slug, serial } = await createPack({
           name: packName,
           message: message,
-          selectedContentIds: totalContentIds
+          selectedContentIds: selectedContentIds,
+          selectedSpotifyIds: selectedSpotifyTrackIds
         });
 
         // 생성된 미디어팩 정보를 결과 페이지로 전달
@@ -179,7 +180,8 @@ export default function Customize() {
           serial,
           name: packName,
           message: message,
-          selectedContentIds: totalContentIds
+          selectedContentIds: selectedContentIds,
+          selectedSpotifyIds: selectedSpotifyTrackIds
         };
 
         localStorage.setItem('packResult', JSON.stringify(packResult));

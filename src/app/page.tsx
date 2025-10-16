@@ -26,19 +26,25 @@ const campaignTexts = [
 ];
 
 export default async function Home() {
-  // Fetch popular contents for the hero slider backgrounds
+  // Fetch random contents for the hero slider backgrounds
+  // Get more items than needed and randomly select 3
   const { data: contents, error } = await supabase
     .from('contents')
     .select('id, thumbnail_url, backdrop_url, release_date, vote_average')
     .not('backdrop_url', 'is', null)
-    .order('vote_average', { ascending: false })
-    .limit(3);
+    .gte('vote_average', 7.0) // Only get high-rated content
+    .limit(20); // Fetch 20 to randomly pick from
 
   if (error) {
     console.error("Error fetching curated contents:", error.message);
   }
 
-  const orderedContents = contents || [];
+  // Randomly shuffle and pick 3 items
+  const shuffledContents = (contents || [])
+    .sort(() => Math.random() - 0.5)
+    .slice(0, 3);
+
+  const orderedContents = shuffledContents;
 
   // Transform Supabase data, merging it with the static campaign text
   const heroItems: HeroItem[] = orderedContents.map((content: any, index: number) => ({

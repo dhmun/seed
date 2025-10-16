@@ -1,17 +1,19 @@
 'use server';
 
 import { supabaseAdmin } from '@/lib/supabase';
-import type { Pack, Content } from '@/lib/supabase';
+import type { Pack, Content, SpotifyTrack } from '@/lib/supabase';
 import { nanoid } from 'nanoid';
 
 export interface CreatePackData {
   name: string;
   message: string;
   selectedContentIds: string[];
+  selectedSpotifyIds?: string[];
 }
 
 export interface PackWithContents extends Pack {
   contents: Content[];
+  spotifyTracks: SpotifyTrack[];
 }
 
 export async function createPack(data: CreatePackData): Promise<{ slug: string; serial: number; }> {
@@ -26,7 +28,9 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
   if (!data.message || data.message.length > 50) {
     throw new Error('메시지는 1-50자 사이여야 합니다.');
   }
-  if (!data.selectedContentIds || data.selectedContentIds.length < 3) {
+
+  const totalContentCount = (data.selectedContentIds?.length || 0) + (data.selectedSpotifyIds?.length || 0);
+  if (totalContentCount < 3) {
     throw new Error('최소 3개의 콘텐츠를 선택해야 합니다.');
   }
 
@@ -51,11 +55,26 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
 
     if (packError) throw new Error(`Failed to create pack: ${packError.message}`);
 
-    // 4. `pack_items` 테이블에 선택된 콘텐츠 목록 추가
-    const packItems = data.selectedContentIds.map(contentId => ({
-      pack_id: newPack.id,
-      content_id: contentId,
-    }));
+    // 4. `pack_items` 테이블에 선택된 콘텐츠 및 Spotify 트랙 추가
+    const packItems = [];
+
+    // TMDb 콘텐츠 추가
+    if (data.selectedContentIds && data.selectedContentIds.length > 0) {
+      packItems.push(...data.selectedContentIds.map(contentId => ({
+        pack_id: newPack.id,
+        content_id: contentId,
+        spotify_track_id: null,
+      })));
+    }
+
+    // Spotify 트랙 추가
+    if (data.selectedSpotifyIds && data.selectedSpotifyIds.length > 0) {
+      packItems.push(...data.selectedSpotifyIds.map(spotifyId => ({
+        pack_id: newPack.id,
+        content_id: null,
+        spotify_track_id: spotifyId,
+      })));
+    }
 
     const { error: itemsError } = await supabaseAdmin
       .from('pack_items')
@@ -97,24 +116,52 @@ export async function getPackBySlug(slug: string): Promise<PackWithContents | nu
       return null;
     }
 
-    // 2. 팩 ID로 관련 콘텐츠 정보 가져오기 (중첩 쿼리)
+    // 2. 팩 ID로 관련 pack_items 가져오기
     const { data: items, error: itemsError } = await supabaseAdmin
       .from('pack_items')
-      .select(`
-        contents (*)
-      `)
+      .select('*')
       .eq('pack_id', pack.id);
 
     if (itemsError) {
-      console.error('Error fetching pack contents:', itemsError.message);
-      // 팩은 찾았지만 콘텐츠를 못찾아도 팩 정보는 반환할 수 있도록 처리
-      return { ...pack, contents: [] };
+      console.error('Error fetching pack items:', itemsError.message);
+      return { ...pack, contents: [], spotifyTracks: [] };
     }
 
-    // Supabase 중첩 쿼리 결과에서 contents 객체만 추출
-    const contents = items.map(item => (item as any).contents).filter(Boolean) as Content[];
+    // 3. content_id와 spotify_track_id 분리
+    const contentIds = items.filter(item => item.content_id).map(item => item.content_id!);
+    const spotifyTrackIds = items.filter(item => item.spotify_track_id).map(item => item.spotify_track_id!);
 
-    return { ...pack, contents };
+    // 4. TMDb 콘텐츠 조회
+    let contents: Content[] = [];
+    if (contentIds.length > 0) {
+      const { data: contentsData, error: contentsError } = await supabaseAdmin
+        .from('contents')
+        .select('*')
+        .in('id', contentIds);
+
+      if (contentsError) {
+        console.error('Error fetching contents:', contentsError.message);
+      } else {
+        contents = contentsData || [];
+      }
+    }
+
+    // 5. Spotify 트랙 조회
+    let spotifyTracks: SpotifyTrack[] = [];
+    if (spotifyTrackIds.length > 0) {
+      const { data: spotifyData, error: spotifyError } = await supabaseAdmin
+        .from('spotify_tracks')
+        .select('*')
+        .in('id', spotifyTrackIds);
+
+      if (spotifyError) {
+        console.error('Error fetching spotify tracks:', spotifyError.message);
+      } else {
+        spotifyTracks = spotifyData || [];
+      }
+    }
+
+    return { ...pack, contents, spotifyTracks };
 
   } catch (error) {
     console.error('getPackBySlug error:', error);

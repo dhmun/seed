@@ -6,22 +6,17 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Share2, 
-  Copy, 
-  Download, 
-  Heart, 
-  Sparkles, 
+import {
+  Heart,
+  Sparkles,
   CheckCircle,
-  ExternalLink,
-  MessageSquare,
-  Users,
-  Camera
+  ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getContentsByIds } from '@/server/actions/contents';
 import { trackShare, trackPackCreation } from '@/lib/analytics';
 import type { Content } from '@/lib/supabase';
+import { classifyByContents } from '@/lib/pack-classifier';
 
 interface PackResult {
   slug: string;
@@ -34,7 +29,6 @@ interface PackResult {
 export default function ResultPage() {
   const [result, setResult] = useState<PackResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sharing, setSharing] = useState(false);
 
   useEffect(() => {
     async function loadPackResult() {
@@ -79,176 +73,6 @@ export default function ResultPage() {
 
     loadPackResult();
   }, []);
-
-  const shareUrl = result ? `${window.location.origin}/pack/${result.slug}` : '';
-
-  const handleCopyLink = async () => {
-    if (!shareUrl || !result) return;
-    
-    try {
-      const copySuccess = await safeCopyToClipboard(shareUrl);
-      if (copySuccess) {
-        await trackShare('copy_link', result.slug);
-        toast.success('링크가 복사되었습니다!');
-      } else {
-        toast.error('링크 복사에 실패했습니다.');
-      }
-    } catch (error) {
-      toast.error('링크 복사에 실패했습니다.');
-    }
-  };
-
-  const handleKakaoShare = async () => {
-    if (!result || !shareUrl) return;
-
-    // 카카오 공유 추적
-    await trackShare('kakao', result.slug);
-
-    // 카카오 SDK 로드 체크 (실제 구현 시 필요)
-    if (typeof window !== 'undefined' && window.Kakao) {
-      window.Kakao.Share.sendDefault({
-        objectType: 'feed',
-        content: {
-          title: `${result.name} | 희망의 씨앗 캠페인`,
-          description: result.message,
-          imageUrl: `${window.location.origin}/api/og?slug=${result.slug}`,
-          link: {
-            mobileWebUrl: shareUrl,
-            webUrl: shareUrl,
-          },
-        },
-        buttons: [
-          {
-            title: '미디어팩 보기',
-            link: {
-              mobileWebUrl: shareUrl,
-              webUrl: shareUrl,
-            },
-          },
-        ],
-      });
-    } else {
-      toast.error('카카오톡 공유 기능을 사용할 수 없습니다.');
-    }
-  };
-
-  const handleSocialShare = async (platform: 'facebook' | 'twitter') => {
-    if (!result || !shareUrl) return;
-
-    // 소셜 공유 추적
-    await trackShare(platform, result.slug);
-
-    const text = `${result.name} - ${result.message}`;
-    let url = '';
-
-    switch (platform) {
-      case 'facebook':
-        url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-        break;
-      case 'twitter':
-        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
-        break;
-    }
-
-    window.open(url, '_blank', 'width=600,height=400');
-  };
-
-  // 안전한 클립보드 복사 헬퍼 함수
-  const safeCopyToClipboard = async (text: string): Promise<boolean> => {
-    try {
-      // Modern clipboard API
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-      
-      // Fallback for older browsers or non-HTTPS
-      const textArea = document.createElement('textarea');
-      textArea.value = text;
-      textArea.style.position = 'fixed';
-      textArea.style.left = '-999999px';
-      textArea.style.top = '-999999px';
-      document.body.appendChild(textArea);
-      textArea.focus();
-      textArea.select();
-      
-      const result = document.execCommand('copy');
-      document.body.removeChild(textArea);
-      return result;
-    } catch (error) {
-      console.warn('Clipboard copy failed:', error);
-      return false;
-    }
-  };
-
-  const handleInstagramShare = async () => {
-    if (!result || !shareUrl) return;
-
-    // 인스타그램 공유 추적
-    await trackShare('instagram', result.slug);
-
-    const text = `${result.name}\n${result.message}\n\n🎬 ${result.serial}번째 희망의 씨앗이 탄생했습니다!\n\n${shareUrl}`;
-    const ogImageUrl = `${window.location.origin}/api/og?slug=${result.slug}`;
-
-    try {
-      // 1. Web Share API 사용 (모바일에서 네이티브 공유)
-      if (navigator.share && /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        try {
-          await navigator.share({
-            title: `${result.name} | 희망의 씨앗 캠페인`,
-            text: text,
-            url: shareUrl
-          });
-          return;
-        } catch (shareError) {
-          console.log('Web Share API failed, trying alternative methods');
-        }
-      }
-
-      // 2. 인스타그램 스토리 URL scheme 시도 (iOS/Android)
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isAndroid = /Android/.test(navigator.userAgent);
-      
-      if (isIOS || isAndroid) {
-        // 텍스트를 클립보드에 복사
-        const copySuccess = await safeCopyToClipboard(text);
-        if (copySuccess) {
-          toast.success('공유 텍스트가 복사되었습니다!');
-        }
-
-        // 인스타그램 앱 URL scheme으로 열기
-        const instagramUrl = isIOS 
-          ? 'instagram://camera' // iOS: 카메라/스토리 모드로 직접 열기
-          : 'intent://share#Intent;package=com.instagram.android;scheme=https;end'; // Android
-
-        // 인스타그램 앱 열기 시도
-        window.location.href = instagramUrl;
-        
-        // 앱이 설치되지 않은 경우 대비 (3초 후 앱스토어로 이동)
-        setTimeout(() => {
-          const storeUrl = isIOS 
-            ? 'https://apps.apple.com/app/instagram/id389801252'
-            : 'https://play.google.com/store/apps/details?id=com.instagram.android';
-          window.open(storeUrl, '_blank');
-        }, 3000);
-
-        toast.info('인스타그램 앱으로 이동합니다. 복사된 텍스트를 붙여넣으세요!');
-        return;
-      }
-
-      // 3. 데스크톱 또는 기타 환경: 링크 복사 + 가이드
-      const copySuccess = await safeCopyToClipboard(text);
-      if (copySuccess) {
-        toast.success('공유 텍스트가 복사되었습니다! 인스타그램에서 붙여넣으세요.');
-      } else {
-        toast.error('클립보드 복사에 실패했습니다. 텍스트를 수동으로 복사해주세요.');
-      }
-      
-    } catch (error) {
-      console.error('Instagram share failed:', error);
-      toast.error('인스타그램 공유에 실패했습니다.');
-    }
-  };
 
   if (loading) {
     return (
@@ -338,85 +162,51 @@ export default function ResultPage() {
             </div>
           </Card>
 
-          {/* 우측: 공유 옵션 */}
+          {/* 우측: 미디어팩 유형 */}
           <div className="space-y-6">
-            <Card className="p-6">
-              <h3 className="font-heading font-bold text-xl mb-4 flex items-center gap-2">
-                <Share2 className="w-5 h-5" />
-                공유하기
-              </h3>
+            {(() => {
+              const packTypeInfo = classifyByContents(result.contents);
+              const colorClasses = {
+                blue: 'bg-blue-50 border-blue-200',
+                green: 'bg-green-50 border-green-200',
+                purple: 'bg-purple-50 border-purple-200',
+                orange: 'bg-orange-50 border-orange-200',
+                gray: 'bg-gray-50 border-gray-200',
+              };
+              const textColorClasses = {
+                blue: 'text-blue-700',
+                green: 'text-green-700',
+                purple: 'text-purple-700',
+                orange: 'text-orange-700',
+                gray: 'text-gray-700',
+              };
 
-              <div className="space-y-3">
-                <Button 
-                  onClick={handleKakaoShare}
-                  className="w-full justify-start bg-yellow-500 hover:bg-yellow-600 text-black"
-                  disabled={sharing}
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  카카오톡으로 공유
-                </Button>
+              return (
+                <Card className={`p-6 border-2 ${colorClasses[packTypeInfo.color as keyof typeof colorClasses]}`}>
+                  <div className="text-center mb-4">
+                    <div className="text-6xl mb-3">{packTypeInfo.icon}</div>
+                    <h3 className={`font-heading font-bold text-2xl mb-2 ${textColorClasses[packTypeInfo.color as keyof typeof textColorClasses]}`}>
+                      {packTypeInfo.type}
+                    </h3>
+                    <div className="text-sm font-medium text-muted-foreground mb-4">
+                      {packTypeInfo.percentage}% 비율
+                    </div>
+                  </div>
 
-                <Button 
-                  onClick={() => handleSocialShare('facebook')}
-                  className="w-full justify-start bg-blue-600 hover:bg-blue-700"
-                  disabled={sharing}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  페이스북으로 공유
-                </Button>
-
-                <Button 
-                  onClick={() => handleSocialShare('twitter')}
-                  className="w-full justify-start bg-sky-500 hover:bg-sky-600"
-                  disabled={sharing}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  트위터(X)로 공유
-                </Button>
-
-                <Button 
-                  onClick={handleInstagramShare}
-                  variant="outline"
-                  className="w-full justify-start bg-gradient-to-r from-purple-500 to-pink-500 text-white border-none hover:from-purple-600 hover:to-pink-600"
-                  disabled={sharing}
-                >
-                  <Camera className="w-4 h-4 mr-2" />
-                  인스타그램에 공유하기
-                </Button>
-              </div>
-            </Card>
-
-            <Card className="p-6">
-              <h3 className="font-heading font-bold text-lg mb-4 flex items-center gap-2">
-                <Copy className="w-5 h-5" />
-                링크 공유
-              </h3>
-              
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={shareUrl}
-                  readOnly
-                  className="flex-1 px-3 py-2 text-sm border rounded-lg bg-muted/50 focus:outline-none"
-                />
-                <Button onClick={handleCopyLink} size="sm">
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <p className="text-xs text-muted-foreground mt-2">
-                이 링크를 통해 누구나 미디어팩을 볼 수 있습니다
-              </p>
-            </Card>
+                  <p className="text-sm text-muted-foreground leading-relaxed text-center">
+                    {packTypeInfo.description}
+                  </p>
+                </Card>
+              );
+            })()}
 
             <Card className="p-6 bg-warm-ivory/30">
               <div className="flex items-start gap-3">
                 <Heart className="w-5 h-5 text-coral mt-1" />
                 <div>
-                  <h4 className="font-medium mb-1">감사합니다!</h4>
+                  <h4 className="font-medium mb-1">미디어팩 생성 완료!</h4>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    당신의 따뜻한 마음이 누군가에게는 큰 힘이 될 것입니다. 
-                    더 많은 사람들과 이 미디어팩을 공유해주세요.
+                    {result.serial}번째 희망의 씨앗이 탄생했습니다. 더 많은 사람들이 함께할 수 있도록 공유해주세요.
                   </p>
                 </div>
               </div>

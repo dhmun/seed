@@ -18,7 +18,7 @@ create table if not exists contents (
   is_active boolean not null default true,
 
   -- TMDb / metadata
-  tmdb_id bigint unique,
+  tmdb_id bigint,
   tmdb_type text,
   release_date date,
   genre_ids jsonb,
@@ -29,13 +29,17 @@ create table if not exists contents (
   original_language text,
 
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+
+  -- Composite unique constraint for TMDb (allows same tmdb_id for movie and tv)
+  constraint contents_tmdb_id_type_unique unique (tmdb_id, tmdb_type)
 );
 
 create index if not exists contents_active_idx on contents (is_active);
 create index if not exists contents_kind_idx on contents (kind);
 create index if not exists contents_popularity_idx on contents (popularity desc nulls last);
 create index if not exists contents_created_idx on contents (created_at desc);
+create index if not exists contents_tmdb_lookup_idx on contents (tmdb_id, tmdb_type);
 
 -- 2) packs
 create table if not exists packs (

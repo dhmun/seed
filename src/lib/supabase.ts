@@ -54,9 +54,9 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['packs']['Row']>;
       };
       pack_items: {
-        Row: { pack_id: string; content_id: string };
-        Insert: { pack_id: string; content_id: string };
-        Update: { pack_id?: string; content_id?: string };
+        Row: { pack_id: string; content_id: string | null; spotify_track_id: string | null };
+        Insert: { pack_id: string; content_id?: string | null; spotify_track_id?: string | null };
+        Update: { pack_id?: string; content_id?: string | null; spotify_track_id?: string | null };
       };
       messages: {
         Row: { id: string; pack_id: string; body: string; created_at: string };
@@ -120,21 +120,36 @@ export type SpotifyTrack = Database['public']['Tables']['spotify_tracks']['Row']
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+// For server-side scripts, allow lazy initialization
+let supabase: ReturnType<typeof createClient<Database>>;
+let isSupabaseConnected = false;
+
+if (supabaseUrl && supabaseAnonKey) {
+  supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+  isSupabaseConnected = true;
+} else if (typeof window === 'undefined') {
+  // Server-side script without env vars - create a dummy client
+  console.warn('[WARN] Supabase env vars not loaded. Creating dummy client.');
+  supabase = null as any; // Will be initialized by scripts that properly load .env
+} else {
+  // Client-side without env vars - this is an error
   throw new Error('Supabase URL and Anon Key are required in .env.local');
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
-
-export const isSupabaseConnected = !!(supabaseUrl && supabaseAnonKey);
+export { supabase, isSupabaseConnected };
 
 
 // =================================================================
 // DO NOT USE IN CLIENT-SIDE CODE
 // Admin client for server-side operations.
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!serviceKey) {
+let supabaseAdmin: ReturnType<typeof createClient<Database>> | null = null;
+
+if (serviceKey && supabaseUrl) {
+  supabaseAdmin = createClient<Database>(supabaseUrl, serviceKey);
+} else if (!serviceKey) {
   console.warn(`[WARN] SUPABASE_SERVICE_ROLE_KEY is not set. Supabase admin client is not available.`);
 }
-export const supabaseAdmin = serviceKey ? createClient<Database>(supabaseUrl, serviceKey) : null;
+
+export { supabaseAdmin };
 // =================================================================

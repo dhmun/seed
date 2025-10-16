@@ -38,6 +38,25 @@ begin
     create policy spotify_tracks_read_all on spotify_tracks for select using (true);
   end if;
 
+  -- Counters policies (read and update for increment_counter function)
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='counters' and policyname='counters_read_all'
+  ) then
+    create policy counters_read_all on counters for select using (true);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='counters' and policyname='counters_insert_all'
+  ) then
+    create policy counters_insert_all on counters for insert with check (true);
+  end if;
+
+  if not exists (
+    select 1 from pg_policies where schemaname='public' and tablename='counters' and policyname='counters_update_all'
+  ) then
+    create policy counters_update_all on counters for update using (true);
+  end if;
+
   -- Allow inserts for tracking tables
   if not exists (
     select 1 from pg_policies where schemaname='public' and tablename='share_events' and policyname='share_events_insert_all'

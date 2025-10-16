@@ -31,6 +31,9 @@ export default function SpotifyTrackSelector({
   const [searchResults, setSearchResults] = useState<SpotifyTrackRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTrackIds, setSelectedTrackIds] = useState<string[]>(initialSelectedIds);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
     setSelectedTrackIds(initialSelectedIds);
@@ -38,25 +41,35 @@ export default function SpotifyTrackSelector({
 
   // 컴포넌트 마운트 시 인기 트랙 로드
   useEffect(() => {
-    handleSearch();
+    loadPopularTracks(0, false);
   }, []);
+
+  const loadPopularTracks = async (newOffset: number, append: boolean) => {
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/spotify/popular?offset=${newOffset}&limit=20`);
+      const result = await response.json();
+
+      if (result.success) {
+        setSearchResults(prev => append ? [...prev, ...(result.data || [])] : (result.data || []));
+        setHasMore(result.hasMore || false);
+        setTotal(result.total || 0);
+        setOffset(newOffset);
+      } else {
+        if (!append) setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('Error fetching popular tracks:', error);
+      if (!append) setSearchResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = useCallback(async () => {
     if (!searchQuery.trim()) {
       // 검색어가 없을 때 인기 트랙들을 보여주기
-      try {
-        const response = await fetch('/api/spotify/popular');
-        const result = await response.json();
-
-        if (result.success) {
-          setSearchResults(result.data || []);
-        } else {
-          setSearchResults([]);
-        }
-      } catch (error) {
-        console.error('Error fetching popular tracks:', error);
-        setSearchResults([]);
-      }
+      loadPopularTracks(0, false);
       return;
     }
 
@@ -234,6 +247,19 @@ export default function SpotifyTrackSelector({
       {!loading && searchQuery.trim() && searchResults.length === 0 && (
         <div className="text-center py-12">
           <p className="text-muted-foreground">검색 결과가 없습니다.</p>
+        </div>
+      )}
+
+      {/* 더보기 버튼 (검색어가 없을 때만) */}
+      {!searchQuery.trim() && hasMore && !loading && (
+        <div className="text-center mt-8">
+          <Button
+            variant="outline"
+            onClick={() => loadPopularTracks(offset + 20, true)}
+            disabled={loading}
+          >
+            더 많은 음악 보기 ({searchResults.length} / {total})
+          </Button>
         </div>
       )}
     </div>

@@ -1,6 +1,9 @@
-import 'dotenv/config';
 import { config } from 'dotenv';
-config({ path: '.env.local' });
+import { resolve } from 'path';
+
+// Load .env.local file before importing anything that uses env vars
+config({ path: resolve(process.cwd(), '.env.local') });
+
 import { syncPopularPlaylists } from '../src/server/actions/spotify_sync';
 
 async function main() {

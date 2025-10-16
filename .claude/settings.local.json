@@ -21,7 +21,11 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(npx shadcn@latest add:*)",
-      "Bash(timeout 60 npm run type-check)"
+      "Bash(timeout 60 npm run type-check)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "WebFetch(domain:developer.themoviedb.org)",
+      "WebSearch",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

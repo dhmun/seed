@@ -29,13 +29,14 @@ const contentKinds: { value: Content['kind'] | 'all' | 'spotify'; label: string;
   { value: 'movie', label: '영화', icon: '🎬' },
   { value: 'drama', label: '드라마', icon: '📺' },
   { value: 'show', label: '예능', icon: '🎭' },
-  { value: 'kpop', label: 'K-POP', icon: '🎵' },
   { value: 'doc', label: '다큐멘터리', icon: '📽️' },
+  { value: 'kpop', label: '음악', icon: '🎵' },
 ];
 
 export default function ContentSelect() {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectedContentsMap, setSelectedContentsMap] = useState<Map<string, Content>>(new Map());
   const [selectedSpotifyTrackIds, setSelectedSpotifyTrackIds] = useState<string[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<Content['kind'] | 'all' | 'spotify'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,7 +66,7 @@ export default function ContentSelect() {
   }, [error]);
 
   // 선택된 콘텐츠들 + Spotify 트랙 용량 계산
-  const selectedContents = contents.filter(content => selectedIds.includes(content.id));
+  const selectedContents = Array.from(selectedContentsMap.values());
   const contentsSizeMB = calculateTotalSize(selectedContents);
   const spotifyTracksSizeMB = selectedSpotifyTrackIds.length * 5; // 각 음악 트랙을 5MB로 계산
   const totalSizeMB = contentsSizeMB + spotifyTracksSizeMB;
@@ -76,29 +77,34 @@ export default function ContentSelect() {
 
   // 콘텐츠 선택/해제 (TMDB 콘텐츠만 해당)
   const toggleContent = (contentId: string) => {
-    setSelectedIds(prev => {
-      const newSelected = prev.includes(contentId)
-        ? prev.filter(id => id !== contentId)
-        : [...prev, contentId];
+    const content = contents.find(c => c.id === contentId);
+    if (!content) return;
 
-      // 선택 시 용량 체크
-      if (!prev.includes(contentId)) {
-        const content = contents.find(c => c.id === contentId);
-        if (content) {
-          const testContentSize = calculateTotalSize([...selectedContents, content]);
-          const testSpotifySize = selectedSpotifyTrackIds.length * 5;
-          const testTotal = testContentSize + testSpotifySize;
-          const testPercentage = (testTotal / capacityMB) * 100;
+    const isCurrentlySelected = selectedIds.includes(contentId);
 
-          if (testPercentage > 100) {
-            toast.error(`용량을 초과했습니다. ${targetCapacity}GB 이하로 선택해주세요.`);
-            return prev;
-          }
-        }
+    if (isCurrentlySelected) {
+      // 선택 해제
+      setSelectedIds(prev => prev.filter(id => id !== contentId));
+      setSelectedContentsMap(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(contentId);
+        return newMap;
+      });
+    } else {
+      // 선택 추가 - 용량 체크
+      const testContentSize = calculateTotalSize([...selectedContents, content]);
+      const testSpotifySize = selectedSpotifyTrackIds.length * 5;
+      const testTotal = testContentSize + testSpotifySize;
+      const testPercentage = (testTotal / capacityMB) * 100;
+
+      if (testPercentage > 100) {
+        toast.error(`용량을 초과했습니다. ${targetCapacity}GB 이하로 선택해주세요.`);
+        return;
       }
 
-      return newSelected;
-    });
+      setSelectedIds(prev => [...prev, contentId]);
+      setSelectedContentsMap(prev => new Map(prev).set(contentId, content));
+    }
   };
 
   const handleNext = () => {
@@ -252,9 +258,16 @@ export default function ContentSelect() {
                   {contentKinds.map((kind) => (
                     <Button
                       key={kind.value}
-                      variant={selectedFilter === kind.value ? 'default' : 'ghost'}
+                      variant={selectedFilter === kind.value || (kind.value === 'kpop' && selectedFilter === 'spotify') ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => setSelectedFilter(kind.value)}
+                      onClick={() => {
+                        // K-POP 선택 시 spotify 필터로 전환
+                        if (kind.value === 'kpop') {
+                          setSelectedFilter('spotify');
+                        } else {
+                          setSelectedFilter(kind.value);
+                        }
+                      }}
                       className="w-full justify-start"
                     >
                       <span className="mr-2">{kind.icon}</span>
