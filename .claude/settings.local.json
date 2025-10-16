@@ -25,7 +25,8 @@
       "mcp__sequential-thinking__sequentialthinking",
       "WebFetch(domain:developer.themoviedb.org)",
       "WebSearch",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(vercel env pull:*)"
     ],
     "deny": [],
     "ask": []
