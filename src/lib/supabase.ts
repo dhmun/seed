@@ -54,7 +54,7 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['packs']['Row']>;
       };
       pack_items: {
-        Row: { pack_id: string; content_id: string | null; spotify_track_id: string | null };
+        Row: { id: number; pack_id: string; content_id: string | null; spotify_track_id: string | null };
         Insert: { pack_id: string; content_id?: string | null; spotify_track_id?: string | null };
         Update: { pack_id?: string; content_id?: string | null; spotify_track_id?: string | null };
       };
@@ -86,13 +86,25 @@ export type Database = {
           album_name: string;
           album_image_url: string | null;
           preview_url: string | null;
-          external_urls: unknown | null;
+          external_url: string | null;
+          duration_ms: number;
           popularity: number | null;
           release_date: string | null;
           created_at: string;
-          updated_at: string;
         };
-        Insert: Partial<Database['public']['Tables']['spotify_tracks']['Row']>;
+        Insert: {
+          id: string;
+          name: string;
+          artist_names: string[];
+          album_name: string;
+          album_image_url?: string | null;
+          preview_url?: string | null;
+          external_url?: string | null;
+          duration_ms: number;
+          popularity?: number | null;
+          release_date?: string | null;
+          created_at?: string;
+        };
         Update: Partial<Database['public']['Tables']['spotify_tracks']['Row']>;
       };
     };

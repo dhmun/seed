@@ -27,7 +27,10 @@
       "WebSearch",
       "Bash(cat:*)",
       "Bash(vercel env pull:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

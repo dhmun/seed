@@ -39,7 +39,7 @@ export async function syncSpotifyTracks(query: string, limit: number = 20) {
     // Transform Spotify tracks to database format
     const dbTracks = spotifyTracks.map(track => {
       // Fix release_date format - Spotify sometimes returns just year ("2001")
-      let releaseDate = track.album.release_date;
+      let releaseDate: string | null = track.album.release_date;
       if (releaseDate) {
         if (releaseDate.startsWith('0000')) {
           // Invalid date like "0000-01-01" - set to null
@@ -60,7 +60,7 @@ export async function syncSpotifyTracks(query: string, limit: number = 20) {
         album_name: track.album.name,
         album_image_url: track.album.images[0]?.url || null,
         preview_url: track.preview_url || null,
-        external_url: track.external_urls.spotify,
+        external_url: track.external_urls?.spotify || null,
         duration_ms: track.duration_ms,
         popularity: track.popularity,
         release_date: releaseDate || null,
@@ -70,7 +70,7 @@ export async function syncSpotifyTracks(query: string, limit: number = 20) {
     // Upsert to database (insert or update on conflict)
     const { error } = await supabaseAdmin
       .from('spotify_tracks')
-      .upsert(dbTracks, { onConflict: 'id' });
+      .upsert(dbTracks as any, { onConflict: 'id' });
 
     if (error) throw error;
 
@@ -252,7 +252,7 @@ export async function syncPopularPlaylists() {
     // Transform Spotify tracks to database format
     const dbTracks = spotifyTracks.map(track => {
       // Fix release_date format - Spotify sometimes returns just year ("2001")
-      let releaseDate = track.album.release_date;
+      let releaseDate: string | null = track.album.release_date;
       if (releaseDate) {
         if (releaseDate.startsWith('0000')) {
           // Invalid date like "0000-01-01" - set to null
@@ -273,7 +273,7 @@ export async function syncPopularPlaylists() {
         album_name: track.album.name,
         album_image_url: track.album.images[0]?.url || null,
         preview_url: track.preview_url || null,
-        external_url: track.external_urls.spotify,
+        external_url: track.external_urls?.spotify || null,
         duration_ms: track.duration_ms,
         popularity: track.popularity,
         release_date: releaseDate || null,
@@ -285,7 +285,7 @@ export async function syncPopularPlaylists() {
     // Upsert to database (insert or update on conflict)
     const { error } = await supabaseAdmin
       .from('spotify_tracks')
-      .upsert(dbTracks, { onConflict: 'id' });
+      .upsert(dbTracks as any, { onConflict: 'id' });
 
     if (error) throw error;
 

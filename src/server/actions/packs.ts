@@ -51,12 +51,12 @@ export async function createPack(data: CreatePackData): Promise<{ slug: string; 
         share_slug: shareSlug,
       } as any)
       .select()
-      .single();
+      .single() as { data: Pack | null; error: any };
 
-    if (packError) throw new Error(`Failed to create pack: ${packError.message}`);
+    if (packError || !newPack) throw new Error(`Failed to create pack: ${packError?.message}`);
 
     // 4. `pack_items` 테이블에 선택된 콘텐츠 및 Spotify 트랙 추가
-    const packItems = [];
+    const packItems: Array<{ pack_id: string; content_id: string | null; spotify_track_id: string | null }> = [];
 
     // TMDb 콘텐츠 추가
     if (data.selectedContentIds && data.selectedContentIds.length > 0) {
@@ -107,7 +107,7 @@ export async function getPackBySlug(slug: string): Promise<PackWithContents | nu
       .from('packs')
       .select('*')
       .eq('share_slug', slug)
-      .single();
+      .single() as { data: Pack | null; error: any };
 
     if (packError || !pack) {
       if (packError && packError.code !== 'PGRST116') { // PGRST116: 0개의 행이 반환됨 (찾지 못한 경우)
@@ -124,12 +124,12 @@ export async function getPackBySlug(slug: string): Promise<PackWithContents | nu
 
     if (itemsError) {
       console.error('Error fetching pack items:', itemsError.message);
-      return { ...pack, contents: [], spotifyTracks: [] };
+      return { ...pack, contents: [], spotifyTracks: [] } as PackWithContents;
     }
 
     // 3. content_id와 spotify_track_id 분리
-    const contentIds = items.filter(item => item.content_id).map(item => item.content_id!);
-    const spotifyTrackIds = items.filter(item => item.spotify_track_id).map(item => item.spotify_track_id!);
+    const contentIds = (items as any[] || []).filter((item: any) => item.content_id).map((item: any) => item.content_id!);
+    const spotifyTrackIds = (items as any[] || []).filter((item: any) => item.spotify_track_id).map((item: any) => item.spotify_track_id!);
 
     // 4. TMDb 콘텐츠 조회
     let contents: Content[] = [];
@@ -161,7 +161,7 @@ export async function getPackBySlug(slug: string): Promise<PackWithContents | nu
       }
     }
 
-    return { ...pack, contents, spotifyTracks };
+    return { ...pack, contents, spotifyTracks } as PackWithContents;
 
   } catch (error) {
     console.error('getPackBySlug error:', error);
@@ -198,9 +198,9 @@ export async function updatePackOgImage(slug: string, ogImageUrl: string): Promi
   }
 
   try {
-    const { error } = await supabaseAdmin
+    const { error } = await (supabaseAdmin as any)
       .from('packs')
-      .update({ og_image_url: ogImageUrl } as any)
+      .update({ og_image_url: ogImageUrl })
       .eq('share_slug', slug);
 
     if (error) {
