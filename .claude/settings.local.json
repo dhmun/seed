@@ -26,7 +26,8 @@
       "WebFetch(domain:developer.themoviedb.org)",
       "WebSearch",
       "Bash(cat:*)",
-      "Bash(vercel env pull:*)"
+      "Bash(vercel env pull:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
