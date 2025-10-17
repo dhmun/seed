@@ -17,11 +17,16 @@ import {
   Sparkles
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getContentsByIds } from '@/server/actions/contents';
-import { getSpotifyTracksByIds, type SpotifyTrackRow } from '@/server/actions/spotify';
-import { createPack } from '@/server/actions/packs';
 import { createPackSchema } from '@/lib/validations';
 import type { Content } from '@/lib/supabase';
+
+type SpotifyTrackRow = {
+  id: string;
+  name: string;
+  artist_names: string[];
+  album_name: string;
+  album_image_url?: string;
+};
 
 export default function CustomizeClient() {
   const router = useRouter();
@@ -75,7 +80,9 @@ export default function CustomizeClient() {
         }
 
         if (contentIds.length > 0) {
-          const contents = await getContentsByIds(contentIds);
+          const res = await fetch(`/api/contents/by-ids?ids=${encodeURIComponent(contentIds.join(','))}`);
+          const json = await res.json();
+          const contents = (json?.data || []) as Content[];
 
           if (contents.length !== contentIds.length) {
             toast.warning(`${contentIds.length - contents.length}개 콘텐츠를 불러오지 못했습니다.`);
@@ -102,10 +109,9 @@ export default function CustomizeClient() {
 
   useEffect(() => {
     if (selectedSpotifyTrackIds.length > 0) {
-      getSpotifyTracksByIds(selectedSpotifyTrackIds)
-        .then((tracks) => {
-          setSelectedSpotifyTracks(tracks);
-        })
+      fetch(`/api/spotify/by-ids?ids=${encodeURIComponent(selectedSpotifyTrackIds.join(','))}`)
+        .then(res => res.json())
+        .then(json => setSelectedSpotifyTracks((json?.data || []) as SpotifyTrackRow[]))
         .catch(error => {
           toast.error('선택한 음악 정보를 불러오는 데 실패했습니다.');
           console.error('Error loading spotify tracks:', error);
@@ -142,12 +148,21 @@ export default function CustomizeClient() {
       setSubmitting(true);
 
       try {
-        const { slug, serial } = await createPack({
-          name: packName,
-          message: message,
-          selectedContentIds: selectedContentIds,
-          selectedSpotifyIds: selectedSpotifyTrackIds
+        const res = await fetch('/api/packs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: packName,
+            message: message,
+            selectedContentIds: selectedContentIds,
+            selectedSpotifyIds: selectedSpotifyTrackIds,
+          })
         });
+        const json = await res.json();
+        if (!res.ok || !json?.success) {
+          throw new Error(json?.error || 'Failed to create pack');
+        }
+        const { slug, serial } = json.data as { slug: string; serial: number };
 
         const packResult = {
           slug,
@@ -400,4 +415,3 @@ export default function CustomizeClient() {
     </main>
   );
 }
-

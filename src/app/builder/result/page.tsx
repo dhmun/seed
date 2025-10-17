@@ -13,7 +13,6 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getContentsByIds } from '@/server/actions/contents';
 import { trackShare, trackPackCreation } from '@/lib/analytics';
 import type { Content } from '@/lib/supabase';
 import { classifyByContents } from '@/lib/pack-classifier';
@@ -44,7 +43,9 @@ export default function ResultPage() {
         const packResult = JSON.parse(packResultStr);
         
         // 선택된 콘텐츠 정보 가져오기
-        const contents = await getContentsByIds(packResult.selectedContentIds);
+        const res = await fetch(`/api/contents/by-ids?ids=${encodeURIComponent(packResult.selectedContentIds.join(','))}`);
+        const json = await res.json();
+        const contents = (json?.data || []) as Content[];
 
         const fullPackResult = {
           slug: packResult.slug,

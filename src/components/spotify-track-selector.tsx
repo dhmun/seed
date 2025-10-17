@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Search, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import Image from 'next/image';
-import { syncSpotifyTracks } from '@/server/actions/spotify_sync';
 import { Database } from '@/lib/supabase'; // Import Database type
 
 type SpotifyTrackRow = Database['public']['Tables']['spotify_tracks']['Row'];
@@ -86,8 +85,13 @@ export default function SpotifyTrackSelector({
         return;
       }
 
-      // 2. 기존 데이터에 없으면 Spotify에서 검색 및 동기화
-      const syncResult = await syncSpotifyTracks(searchQuery, 20);
+      // 2. 기존 데이터에 없으면 Spotify에서 검색 및 동기화 (API 호출)
+      const syncRes = await fetch('/api/spotify/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: searchQuery, limit: 20 })
+      });
+      const syncResult = await syncRes.json();
       if (!syncResult.success) {
         toast.error(syncResult.message);
         setLoading(false);
